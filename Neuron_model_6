@@ -1,0 +1,151 @@
+
+class Neuron:
+    """
+    Neuron class that takes a dictionary of arguments with keys:
+    
+    name (str) - The name of the neuron
+    n_type (str: ex, inh_v, inh_pr, inh_f, inh_tv, inh_kv) -
+                The type of neuron it is: excitatory, voltage inhibitatory,
+                vesicle release inhibitatory, etc... 
+    M (int) - number of docked vesicles
+    E (int) - number of empty vesicles
+    k (float)
+    pr (float)
+    f (float: between 0 and 1)
+    vth (float)
+    tv (float)
+    kv (float)
+    v (float)
+    other (dictionary: key/values "pr":(percentage), "f":(percentage), "tv":(float), "kv":(float))
+    
+    
+    """
+    def __init__(self, neuron_args):
+        self.name, self.n_type, self.M, self.E, self.k, \
+                self.pr, self.f, self.v0, \
+                self.vth, self.tv, self.kv, \
+                self.v, self.other = [neuron_args[v] for i,v in enumerate(neuron_args)]
+
+        #Incase the neuron is inhibited, keep a copy of the original values
+        self.pr_original = self.pr
+        self.f_original = self.f
+        self.tv_original = self.tv
+        self.kv_original = self.kv
+
+        #Triggers that prevent an inhibition from producing an increasing effect
+        self.pr_changed = False
+        self.f_changed = False
+        self.tv_changed = False
+        self.kv_changed = False
+
+        #Initialize empty connection dictionary
+        self.pre_connections = {}
+        self.post_connections = {}
+        
+    def pre(self):
+        #Return pre_neuron connections
+        return self.pre_connections
+    
+    def post(self):
+        #Return post_neuron connections
+        return self.post_connections
+
+    def add_pre(self, N):
+        #Add a neuron to the pre_connection_list
+        self.pre_connections[N.name] = N
+
+    
+    def add_post(self, N):
+        #Add a neuron to the post_connection list
+        self.post_connections[N.name] = N
+
+    def AP(self):
+        #Generate an presynaptic action potential
+        #into the postsynaptic neurons with their associated effects
+        
+        def update_voltage_function(pc):
+##            self.M
+##            self.E
+##            self.k
+##            self.pr
+##            self.f
+##            self.tv
+            pc.v += 1
+
+
+        if self.n_type == 'ex':
+            for name in self.post_connections.keys():
+                update_voltage_function(self.post_connections[name])
+
+        #Directly changes the voltage of the neuron    
+        if self.n_type == 'inh_v':
+            for name in self.post_connections.keys():
+                update_voltage_function(self.post_connections[name])
+
+
+        if self.n_type == 'inh_pr':
+            for name in self.post_connections.keys():
+                if self.post_connections[name].pr_changed == False:
+                    self.post_connections[name].pr *= self.other['pr']
+                    self.post_connections[name].pr_changed = True
+                update_voltage_function(self.post_connections[name])
+                
+    def describe(self):
+        #Describe all the information about the neuron
+        print('Name: {}'.format(self.name))
+        print('Neuron Type: {}'.format(self.n_type))
+        print('M: {}'.format(self.M))
+        print('E: {}'.format(self.E))
+        print('k: {}'.format(self.k))
+        print('pr: {}'.format(self.pr))
+        print('f: {}'.format(self.f))
+        print('v0: {}'.format(self.v0))
+        print('vth: {}'.format(self.vth))
+        print('tv: {}'.format(self.tv))
+        print('kv: {}'.format(self.kv))
+        print('v: {}'.format(self.v))
+        print('Pre connections: {}'.format(list(self.pre_connections.keys())))
+        print('Post connections: {}'.format(list(self.post_connections.keys())))
+        if self.other != None:
+            print('Other properties: {}'.format(self.other))
+        print('pr_changed = {}'.format(self.pr_changed))
+        print('f_changed = {}'.format(self.f_changed))
+        print('tv_changed = {}'.format(self.tv_changed))
+        print('kv_changed = {}'.format(self.kv_changed))
+        
+
+
+def get_dict(**x):
+    #Function that makes it easy to define a dictionary.
+    return x
+
+
+#Neurons created with the dictionary facilitation function defined above.
+
+#Excitatory neuron
+neuron_args1 = get_dict(name = 'ex_1', n_type = 'ex', M = 10, E = 5, k = 1,
+                       pr = 0.5, f = 1, v0 = 0,
+                       vth = 0.2, tv = 10, kv = 0.01, v = 0, other = None)
+
+
+#other dictionary for the inhibitory neuron that causes a 20% release
+#in the pr variable of the postsynaptic neurons it innervates.
+inh_dict = {'pr': 0.8} 
+neuron_args2 = get_dict(name = 'inh_1', n_type = 'inh_pr', M = 10, E = 5, k = 1,
+                       pr = 0.5, f = 1, v0 = 0,
+                       vth = 0.2, tv = 10, kv = 0.01, v = 0, other = inh_dict)
+
+
+#Create the two neurons
+N1 = Neuron(neuron_args1)
+N2 = Neuron(neuron_args2)
+
+#Make N2 a presynaptic inhibitory neuron to N1.
+N2.add_post(N1)
+
+
+N1.pr
+N2.AP()
+N1.v
+N1.pr
+N1.describe()
