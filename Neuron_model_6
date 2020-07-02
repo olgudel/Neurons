@@ -113,30 +113,9 @@ class Neuron:
         
         #Describe all the information about the neuron
 
-##Easy way, but not simple to visualize
-##        self.__dict__
-        
-        print('Name: {}'.format(self.name))
-        print('Neuron Type: {}'.format(self.n_type))
-        print('M: {}'.format(self.M))
-        print('E: {}'.format(self.E))
-        print('k: {}'.format(self.k))
-        print('pr: {}'.format(self.pr))
-        print('f: {}'.format(self.f))
-        print('v0: {}'.format(self.v0))
-        print('vth: {}'.format(self.vth))
-        print('tv: {}'.format(self.tv))
-        print('kv: {}'.format(self.kv))
-        print('v: {}'.format(self.v))
-        print('Pre connections: {}'.format(list(self.pre_connections.keys())))
-        print('Post connections: {}'.format(list(self.post_connections.keys())))
-        if self.other != None:
-            print('Other properties: {}'.format(self.other))
-        print('pr_changed = {}'.format(self.pr_changed))
-        print('f_changed = {}'.format(self.f_changed))
-        print('tv_changed = {}'.format(self.tv_changed))
-        print('kv_changed = {}'.format(self.kv_changed))
-        
+        for k in self.__dict__.keys():
+            print(k + ': {}'.format(self.__dict__[k]))
+                
 ################################################################################
 #
 #                                Functions
@@ -150,16 +129,37 @@ def get_dict(**x):
 def neuron_args_check(args_dict_list, template_args):
     for i, dictionary in enumerate(args_dict_list):
         if dictionary.keys() != template_args.keys():
-            raise Exception('Dictionary {} is not in the '.format(i)+\
+            raise Exception('\n\nDictionary {} is not in the '.format(i)+\
                     'right form.\n\nIt has these keys:\n\n{}\n\nIt should have these keys:\n\n{}'.format(dictionary.keys(), template_args.keys()))
     return 'All dictionaries are in the appropriate form.'
 
 def make_template(template_names):
+    """
+    Make the neuron argument dictionary template
+    in order to check to see if the created neuron
+    argument dictionaries have the same keys as the template.]
+    """
     template = {}
     for name in template_names[:-1]:
         template[name] = None
     template[template_names[-1]] = {}
     return template
+
+def make_pre_post_connections(connection_list):
+    """
+
+    Connect a presynaptic neuron (pre_n) to a postsynaptic neuron (post_n).
+
+    Takes a list of length 2 lists.
+    In length 2 list, the first element is the presynaptic neuron,
+    and the second element is the postsynaptic neuron.
+    
+    """
+    for i in range(len(connection_list)):
+        pre_n = connection_list[i][0]
+        post_n = connection_list[i][1]
+        pre_n.add_post(post_n)
+        post_n.add_pre(pre_n)
 
 ################################################################################
 #
@@ -172,33 +172,49 @@ template_names = ['name', 'n_type', 'M', 'E', 'k',
                   'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'v', 'other']
 template_args = make_template(template_names)
 
-#Create neuron argument dictionaries.
-neuron_args1 = get_dict(name = 'ex_1', n_type = 'ex', M = 10, E = 5, k = 1,
+#Create 4 neurons: An excitatory neuron (ex), and inhibitory neuron 
+#effecting the probability of release of (ex), an inhibitory neuron (inh_v)
+#to effect a postsynaptic neuron (post)
+
+#Excitatory neuron dictionary
+n_args_ex = get_dict(name = 'ex_1', n_type = 'ex', M = 10, E = 5, k = 1,
                        pr = 0.5, f = 1, v0 = 0,
                        vth = 0.2, tv = 10, kv = 0.01, v = 0, other = None)
 
 #other dictionary for the inhibitory neuron that causes a 20% release
 #in the pr variable of the postsynaptic neurons it innervates.
 inh_dict = {'pr': 0.8} 
-neuron_args2 = get_dict(name = 'inh_1', n_type = 'inh_pr', M = 10, E = 5,
+n_args_inh_v = get_dict(name = 'inh_1', n_type = 'inh_v', M = 10, E = 5,
                         k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
                         kv = 0.01, v = 0, other = inh_dict)
 
-bad_dict = get_dict(bad1 = None, bad2 = None)
-bad_args_dict_list = [neuron_args1, neuron_args2, bad_dict]
-args_dict_list = [neuron_args1, neuron_args2]
+n_args_post_inh_pr = get_dict(name = 'inh_1', n_type = 'inh_pr', M = 10, E = 5,
+                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
+                        kv = 0.01, v = 0, other = inh_dict)
 
-#Check to make sure all neuron parameters are in the correct form.
-neuron_args_check(bad_args_dict_list, template_args)
+##bad_dict = get_dict(bad1 = None, bad2 = None)
+##bad_args_dict_list = [neuron_args1, neuron_args2, bad_dict]
+##
+###Check to make sure all neuron parameters are in the correct form.
+###CODE WILL RAISE AN ERROR HERE
+##neuron_args_check(bad_args_dict_list, template_args)
+
+#Code works here
+args_dict_list = [n_args_ex, n_args_inh_v, n_args_post_inh_pr]
 neuron_args_check(args_dict_list, template_args)
 
 
 #Create the two neurons
-N1 = Neuron(neuron_args1)
-N2 = Neuron(neuron_args2)
+N_ex = Neuron(n_args_ex)
+N_inh_v = Neuron(n_args_inh_v)
+N_post_inh_pr = Neuron(n_args_post_inh_pr)
 
-#Make N2 a presynaptic inhibitory neuron to N1.
-N2.add_post(N1)
+#Make N2 a presynaptic neuron to postsynaptic neuron N1.
+connection_list = [[N_ex, N_post], [N_inh_v, N_post_inh_pr],
+                   [N_post_inh_pr, N_ex]]
+make_pre_post_connections(connection_list)
+connect_pre_to_post(N_ex, N_post)
+connect_pre_to_post()
 
 
 N1.pr
