@@ -1,3 +1,16 @@
+################################################################################
+#
+#                                Libraries
+#
+################################################################################
+import numpy as np
+import matplotlib.pyplot as plt
+
+################################################################################
+#
+#                                 Classes
+#
+################################################################################
 
 class Neuron:
     """
@@ -21,11 +34,17 @@ class Neuron:
     
     """
     def __init__(self, neuron_args):
-        self.name, self.n_type, self.M, self.E, self.k, \
-                self.pr, self.f, self.v0, \
-                self.vth, self.tv, self.kv, \
-                self.v, self.other = [neuron_args[v] for i,v in enumerate(neuron_args)]
 
+        #Create all class attributes from the neuron_args dictionary.
+        self.__dict__.update((k, v) for k, v in neuron_args.items())
+
+##  The names of the attributes will be:
+##
+##        self.name, self.n_type, self.M, self.E, self.k,
+##        self.pr, self.f, self.v0, 
+##        self.vth, self.tv, self.kv, 
+##        self.v, self.other
+        
         #Incase the neuron is inhibited, keep a copy of the original values
         self.pr_original = self.pr
         self.f_original = self.f
@@ -91,7 +110,12 @@ class Neuron:
                 update_voltage_function(self.post_connections[name])
                 
     def describe(self):
+        
         #Describe all the information about the neuron
+
+##Easy way, but not simple to visualize
+##        self.__dict__
+        
         print('Name: {}'.format(self.name))
         print('Neuron Type: {}'.format(self.n_type))
         print('M: {}'.format(self.M))
@@ -113,27 +137,60 @@ class Neuron:
         print('tv_changed = {}'.format(self.tv_changed))
         print('kv_changed = {}'.format(self.kv_changed))
         
-
-
+################################################################################
+#
+#                                Functions
+#
+################################################################################
+        
 def get_dict(**x):
     #Function that makes it easy to define a dictionary.
     return x
 
+def neuron_args_check(args_dict_list, template_args):
+    for i, dictionary in enumerate(args_dict_list):
+        if dictionary.keys() != template_args.keys():
+            raise Exception('Dictionary {} is not in the '.format(i)+\
+                    'right form.\n\nIt has these keys:\n\n{}\n\nIt should have these keys:\n\n{}'.format(dictionary.keys(), template_args.keys()))
+    return 'All dictionaries are in the appropriate form.'
 
-#Neurons created with the dictionary facilitation function defined above.
+def make_template(template_names):
+    template = {}
+    for name in template_names[:-1]:
+        template[name] = None
+    template[template_names[-1]] = {}
+    return template
 
-#Excitatory neuron
+################################################################################
+#
+#                                Code
+#
+################################################################################
+
+#Create neuron argument template for checking to see if arguments are correct
+template_names = ['name', 'n_type', 'M', 'E', 'k',
+                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'v', 'other']
+template_args = make_template(template_names)
+
+#Create neuron argument dictionaries.
 neuron_args1 = get_dict(name = 'ex_1', n_type = 'ex', M = 10, E = 5, k = 1,
                        pr = 0.5, f = 1, v0 = 0,
                        vth = 0.2, tv = 10, kv = 0.01, v = 0, other = None)
 
-
 #other dictionary for the inhibitory neuron that causes a 20% release
 #in the pr variable of the postsynaptic neurons it innervates.
 inh_dict = {'pr': 0.8} 
-neuron_args2 = get_dict(name = 'inh_1', n_type = 'inh_pr', M = 10, E = 5, k = 1,
-                       pr = 0.5, f = 1, v0 = 0,
-                       vth = 0.2, tv = 10, kv = 0.01, v = 0, other = inh_dict)
+neuron_args2 = get_dict(name = 'inh_1', n_type = 'inh_pr', M = 10, E = 5,
+                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
+                        kv = 0.01, v = 0, other = inh_dict)
+
+bad_dict = get_dict(bad1 = None, bad2 = None)
+bad_args_dict_list = [neuron_args1, neuron_args2, bad_dict]
+args_dict_list = [neuron_args1, neuron_args2]
+
+#Check to make sure all neuron parameters are in the correct form.
+neuron_args_check(bad_args_dict_list, template_args)
+neuron_args_check(args_dict_list, template_args)
 
 
 #Create the two neurons
