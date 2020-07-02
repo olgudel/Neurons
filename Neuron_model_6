@@ -44,6 +44,12 @@ class Neuron:
 ##        self.pr, self.f, self.v0, 
 ##        self.vth, self.tv, self.kv, 
 ##        self.v, self.other
+
+
+##        #History arguments
+##        self.v_hist = []
+##        self.b_hist = self.f
+
         
         #Incase the neuron is inhibited, keep a copy of the original values
         self.pr_original = self.pr
@@ -111,10 +117,18 @@ class Neuron:
                 
     def describe(self):
         
-        #Describe all the information about the neuron
+        """
+        Describe all the information about the neuron
+        Print out every attribute.
+        """
 
         for k in self.__dict__.keys():
             print(k + ': {}'.format(self.__dict__[k]))
+
+class History:
+    def __init__():
+        v_hist
+        
                 
 ################################################################################
 #
@@ -123,10 +137,16 @@ class Neuron:
 ################################################################################
         
 def get_dict(**x):
-    #Function that makes it easy to define a dictionary.
+    """
+    Function that makes it easy to define a dictionary.
+    """
     return x
 
 def neuron_args_check(args_dict_list, template_args):
+    """
+    Check to see if all the neuron argument
+    dictionaries are in the right format.
+    """
     for i, dictionary in enumerate(args_dict_list):
         if dictionary.keys() != template_args.keys():
             raise Exception('\n\nDictionary {} is not in the '.format(i)+\
@@ -215,6 +235,11 @@ connection_list = [[N_ex, N_post], [N_inh_v, N_post_inh_pr],
 make_pre_post_connections(connection_list)
 connect_pre_to_post(N_ex, N_post)
 connect_pre_to_post()
+
+#Test for inh_pr
+N1 = Neuron(n_args_ex)
+N2 = Neuron(n_args_post_inh_pr)
+make_pre_post_connections([[N2, N1]])
 
 
 N1.pr
