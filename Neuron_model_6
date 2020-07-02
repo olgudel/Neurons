@@ -5,6 +5,7 @@
 ################################################################################
 import numpy as np
 import matplotlib.pyplot as plt
+import queue
 
 ################################################################################
 #
@@ -66,6 +67,15 @@ class Neuron:
         #Initialize empty connection dictionary
         self.pre_connections = {}
         self.post_connections = {}
+
+
+
+#
+        hist_len = 10
+        historical_pre = np.zeros(hist_len)
+        self.voltage_queue = queue.Queue()
+
+#
         
     def pre(self):
         #Return pre_neuron connections
@@ -125,9 +135,40 @@ class Neuron:
         for k in self.__dict__.keys():
             print(k + ': {}'.format(self.__dict__[k]))
 
-class History:
-    def __init__():
-        v_hist
+        
+class Queue:
+    def __init__(self, q_size):
+        self.q_size = q_size
+        
+        self.positions_dict = {'p{}'.format(i):i for i in range(self.q_size)}
+
+    def rotate_positions(self):
+        for i in range(len(self.positions_dict.keys()) - 1):
+            self.temp = self.positions_dict['p{}'.format(i+1)]
+            self.positions_dict['p{}'.format(i)] = self.temp
+        self.positions_dict['p{}'.format(self.q_size - 1)] = 0
+        del self.temp
+        #Set i to 0 in Position(i) above
+
+    def display_values(self):
+        return self.__dict__
+
+    def convert_to_list(self):
+        return [float(v) for i,v in self.positions_dict]
+    
+
+        
+
+q = Queue(10)
+
+qq = q.convert_to_list()
+
+q.display_values()
+q.rotate_positions()
+q.display_values()
+        
+        
+        
         
                 
 ################################################################################
