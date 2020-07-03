@@ -103,7 +103,7 @@ class Neuron:
     def add_pre(self, N):
         #Add a neuron to the pre_connection_list
         self.pre_connections[N.name] = N
-        self.preneuron_voltage_contributions[N.name] = np.zeros(n_tests)
+        self.preneuron_voltage_contributions[N.name] = np.zeros(self.AP_length)
 
     
     def add_post(self, N):
@@ -114,7 +114,7 @@ class Neuron:
         #Generate an presynaptic action potential
         #into the postsynaptic neurons with their associated effects
         
-        def update_voltage_function(pc):
+        def update_voltage_contributions(pc):
             
             def AP_function():
                 return self.A * np.exp(-np.arange(self.AP_length)/self.tau)
@@ -126,17 +126,27 @@ class Neuron:
 ##            self.f
 ##            self.tv
             pc.v += 1
-            pc.preneuron_voltage_contributions[self.name][timer:timer + self.AP_length] = AP_function()
+            pc.preneuron_voltage_contributions[self.name] = AP_function()
 
+            #TIMER IS USED ABOVE HERE
+            
+        def update_net_voltage():
+            self.net_voltage_sum = np.zeros(self.AP_length)
+            for name, contribution in self.preneuron_voltage_contributions:
+                self.net_voltage_sum += contribution 
+            
+            self.net_voltage_history[self.timer:self.timer+self.AP_length] = \
+                [self.preneuron_voltage_contributions[name]]
+            
 
         if self.n_type == 'ex':
             for name in self.post_connections.keys():
-                update_voltage_function(self.post_connections[name])
+                update_voltage_contributions(self.post_connections[name])
 
         #Directly changes the voltage of the neuron    
         if self.n_type == 'inh_v':
             for name in self.post_connections.keys():
-                update_voltage_function(self.post_connections[name])
+                update_voltage_contributions(self.post_connections[name])
 
 
         if self.n_type == 'inh_pr':
@@ -144,7 +154,7 @@ class Neuron:
                 if self.post_connections[name].pr_changed == False:
                     self.post_connections[name].pr *= self.other['pr']
                     self.post_connections[name].pr_changed = True
-                update_voltage_function(self.post_connections[name])
+                update_voltage_contributions(self.post_connections[name])
             
                 
     def describe(self):
@@ -338,6 +348,18 @@ n_args_post_inh_pr_2 = get_dict(name = 'inh_2', n_type = 'inh_pr', M = 10, E = 5
                         k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
                         kv = 0.01, v = 0, AP_length = 10, A = 1, tau = 10,
                               other = inh_dict)
+n_args_post_inh_pr_3 = get_dict(name = 'inh_3', n_type = 'inh_pr', M = 10, E = 5,
+                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
+                        kv = 0.01, v = 0, AP_length = 10, A = 1, tau = 10,
+                              other = inh_dict)
+
+
+n_args_post_inh_pr_4 = get_dict(name = 'inh_4', n_type = 'inh_pr', M = 10, E = 5,
+                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
+                        kv = 0.01, v = 0, AP_length = 10, A = 1, tau = 10,
+                              other = inh_dict)
+
+
 
 ##bad_dict = get_dict(bad1 = None, bad2 = None)
 ##bad_args_dict_list = [neuron_args1, neuron_args2, bad_dict]
@@ -375,11 +397,41 @@ make_pre_post_connections(connection_list)
 N1 = Neuron(n_args_ex, n_tests)
 N2 = Neuron(n_args_post_inh_pr, n_tests)
 N3 = Neuron(n_args_post_inh_pr_2, n_tests)
+N4 = Neuron(n_args_post_inh_pr_3, n_tests)
+N5 = Neuron(n_args_post_inh_pr_4, n_tests)
 make_pre_post_connections([[N2, N1], [N2, N3]])
 N2.AP()
 N1.describe()
 N3.describe()
+
+
+p_array = [0.2, 0.5, 0.8] 
+n_tests = 1000
+reaction_times = generate_AP_times(p_array, n_tests) #a[i] is the i-th instance of time
+
+#Test to update voltages sequentially
+N1 = Neuron(n_args_ex, n_tests)
+N2 = Neuron(n_args_post_inh_pr, n_tests)
+N3 = Neuron(n_args_post_inh_pr_2, n_tests)
+N4 = Neuron(n_args_post_inh_pr_3, n_tests)
+N5 = Neuron(n_args_post_inh_pr_4, n_tests)
+make_pre_post_connections([[N1, N3], [N1, N4], [N2, N4], [N2, N5]])
+N2.AP()
+N1.describe()
+N3.describe()
+
+#List of firing neurons
+firing_neurons = [N1, N2]
+
+def update_network(firing_neurons):
+    for FN in firing_neurons:
+        FN.AP()
+
+update_network(firing_neurons) #Updates all the post neurons in the firing network.
+    
+
 ##Correctly updates N1 and N3 that are connected from N2.  
+
 
 
 N1.pr
