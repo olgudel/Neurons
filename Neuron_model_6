@@ -35,6 +35,8 @@ class Neuron:
     """
     def __init__(self, neuron_args, n_tests):
 
+        self.time_index = 0
+
         #Create all class attributes from the neuron_args dictionary.
         self.__dict__.update((k, v) for k, v in neuron_args.items())
 
@@ -43,7 +45,7 @@ class Neuron:
 ##        self.name, self.n_type, self.M, self.E, self.k,
 ##        self.pr, self.f, self.v0, 
 ##        self.vth, self.tv, self.kv, 
-##        self.v, self.other
+##        self.v, self.AP_length, self.A, self.tau, self.other
 
 
 ##        #History arguments
@@ -72,12 +74,13 @@ class Neuron:
 #
 
         self.n_tests = n_tests
-        hist_len = 10
-        historical_pre = np.zeros(hist_len)
+
+        self.preneuron_voltage_contributions = {}
+        
         self.queue_size = 10
         self.voltage_queue = Queue(self.queue_size)
         
-        self.net_voltage_history = []
+        self.net_voltage_history = np.zeros(n_tests)
         #Net voltage history
         #Voltage history for each presynaptic neuron contribution
         #Every instance, update the net and the contributions by
@@ -88,6 +91,8 @@ class Neuron:
         #at to the first one and then set_values.
 
 #
+
+
         
     def pre(self):
         #Return pre_neuron connections
@@ -100,6 +105,7 @@ class Neuron:
     def add_pre(self, N):
         #Add a neuron to the pre_connection_list
         self.pre_connections[N.name] = N
+        self.preneuron_voltage_contributions[N.name] = np.zeros(n_tests)
 
     
     def add_post(self, N):
@@ -109,8 +115,17 @@ class Neuron:
     def AP(self):
         #Generate an presynaptic action potential
         #into the postsynaptic neurons with their associated effects
+
+        def update_contribution_voltages(self, contribution_voltages):
+            #contribution_voltages is a dictionary with same keys as preneurons.
+            for k in preneuron_voltage_contributions.keys():
+                self.preneuron_voltage_contributions[k][self.time_index:self.time_index + self.AP_length] = contribution_voltages[k]
         
         def update_voltage_function(pc):
+            
+            def AP_function():
+                return self.A * np.exp(-np.arange(self.AP_length)/self.tau)
+                
 ##            self.M
 ##            self.E
 ##            self.k
@@ -118,6 +133,8 @@ class Neuron:
 ##            self.f
 ##            self.tv
             pc.v += 1
+
+            pc.preneuron_voltage_contributions[self.name] = AP_function()
 
 
         if self.n_type == 'ex':
@@ -176,21 +193,21 @@ class Queue:
         for i in range(self.q_size):
             self.positions_dict['p{}'.format(i)] = 0      
 
-#Queue tests
-q = Queue(10)
-
-qq = q.convert_to_list()
-
-q.display_values()
-q.rotate_positions()
-q.display_values()
-
-q.set_values(range(10))
-q.display_values()
-q.reset()
-q.display_values()
-        
-        
+###Queue tests
+##q = Queue(10)
+##
+##qq = q.convert_to_list()
+##
+##q.display_values()
+##q.rotate_positions()
+##q.display_values()
+##
+##q.set_values(range(10))
+##q.display_values()
+##q.reset()
+##q.display_values()
+##        
+##        
         
         
                 
@@ -247,12 +264,29 @@ def make_pre_post_connections(connection_list):
 
 def generate_AP_times(p_array, n_tests):
     """
+
     Function that generates the arrival
     of action potentials in a particular instant.
+
+    Arguments
+    ---------
+    
+    p-array : (array_like) 
+               Each entry is a probability  of occurance for
+               the neuron action potential firing
+    n_tests : (int)
+              The number of total tests to run.
+    
+
+    Returns
+    -------
+
+    reactions_array : (array-like)
+                        A numpy array of the shape (n_tests,len(p_array))
+                        reactions_array[i] is the ith set of firing preneurons.
+                        
     """
     reactions_array = np.zeros((len(p_array), n_tests))
-    
-#
     for j in range(n_tests):
         x = np.random.uniform(0,1)
         for i in range(len(p_array)):
@@ -260,25 +294,13 @@ def generate_AP_times(p_array, n_tests):
                 reactions_array[i][j] = 1
             else:
                 reactions_array[i][j] = 0
-#
-    return reactions_array.astype(int)
+                
+    return reactions_array.astype(int).T
 
-
-##    all_reactions = []
-##    for i in range(n_tests):
-##        x = np.random.uniform(0,1)
-##        reactions_list = []
-##        for i in range(len(p_array)):
-##            if x <= p_array[i]:
-##                reactions_list.append(i)
-##        all_reactions.append(reactions_list)
-##
-##    
-##    return all_reactions
 
 p_array = [0.2, 0.5, 0.8] 
 n_tests = 1000
-a = generate_AP_times(p_array, n_tests) #a[:, i] is the i-th instance of time
+a = generate_AP_times(p_array, n_tests) #a[i] is the i-th instance of time
 
 
 ################################################################################
@@ -292,7 +314,7 @@ n_tests = 100
 
 #Create neuron argument template for checking to see if arguments are correct
 template_names = ['name', 'n_type', 'M', 'E', 'k',
-                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'v', 'other']
+                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'v', 'AP_length','A','tau', 'other']
 template_args = make_template(template_names)
 
 #Create 4 neurons: An excitatory neuron (ex), and inhibitory neuron 
@@ -302,18 +324,25 @@ template_args = make_template(template_names)
 #Excitatory neuron dictionary
 n_args_ex = get_dict(name = 'ex_1', n_type = 'ex', M = 10, E = 5, k = 1,
                        pr = 0.5, f = 1, v0 = 0,
-                       vth = 0.2, tv = 10, kv = 0.01, v = 0, other = None)
+                       vth = 0.2, tv = 10, kv = 0.01, v = 0, AP_length = 10,
+                     A= 1, tau = 10, other = None)
 
 #other dictionary for the inhibitory neuron that causes a 20% release
 #in the pr variable of the postsynaptic neurons it innervates.
 inh_dict = {'pr': 0.8} 
 n_args_inh_v = get_dict(name = 'inh_1', n_type = 'inh_v', M = 10, E = 5,
                         k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
-                        kv = 0.01, v = 0, other = inh_dict)
+                        kv = 0.01, v = 0,AP_length = 10, A = 1, tau = 10,
+                        other = inh_dict)
 
 n_args_post_inh_pr = get_dict(name = 'inh_1', n_type = 'inh_pr', M = 10, E = 5,
                         k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
-                        kv = 0.01, v = 0, other = inh_dict)
+                        kv = 0.01, v = 0, AP_length = 10, A = 1, tau = 10,
+                              other = inh_dict)
+n_args_post_inh_pr_2 = get_dict(name = 'inh_2', n_type = 'inh_pr', M = 10, E = 5,
+                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
+                        kv = 0.01, v = 0, AP_length = 10, A = 1, tau = 10,
+                              other = inh_dict)
 
 ##bad_dict = get_dict(bad1 = None, bad2 = None)
 ##bad_args_dict_list = [neuron_args1, neuron_args2, bad_dict]
@@ -337,10 +366,18 @@ connection_list = [[N_ex, N_post_inh_pr], [N_inh_v, N_post_inh_pr],
                    [N_post_inh_pr, N_ex]]
 make_pre_post_connections(connection_list)
 
+###Test for connecting N2 and N3 to N1
+##N1 = Neuron(n_args_ex, n_tests)
+##N2 = Neuron(n_args_post_inh_pr, n_tests)
+##N3 = Neuron(n_args_post_inh_pr_2, n_tests)
+##make_pre_post_connections([[N2, N1], [N3, N1]])
+
+
 #Test for inh_pr
 N1 = Neuron(n_args_ex, n_tests)
 N2 = Neuron(n_args_post_inh_pr, n_tests)
-make_pre_post_connections([[N2, N1]])
+N3 = Neuron(n_args_post_inh_pr_2, n_tests)
+make_pre_post_connections([[N2, N1], [N3, N1]])
 
 
 N1.pr
@@ -348,3 +385,5 @@ N2.AP()
 N1.v
 N1.pr
 N1.describe()
+
+N1.preneuron_voltage_contributions
