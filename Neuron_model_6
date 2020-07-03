@@ -329,33 +329,33 @@ template_args = make_template(template_names)
 #Excitatory neuron dictionary
 n_args_ex = get_dict(name = 'ex_1', n_type = 'ex', M = 10, E = 5, k = 1,
                        pr = 0.5, f = 1, v0 = 0,
-                       vth = 0.2, tv = 10, kv = 0.01, v = 0, AP_length = 10,
+                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
                      A= 1, tau = 10, other = None)
 
 #other dictionary for the inhibitory neuron that causes a 20% release
 #in the pr variable of the postsynaptic neurons it innervates.
 inh_dict = {'pr': 0.8} 
 n_args_inh_v = get_dict(name = 'inh_1', n_type = 'inh_v', M = 10, E = 5,
-                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
+                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 3, tv = 10,
                         kv = 0.01, v = 0,AP_length = 10, A = 1, tau = 10,
                         other = inh_dict)
 
 n_args_post_inh_pr = get_dict(name = 'inh_1', n_type = 'inh_pr', M = 10, E = 5,
-                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
+                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 3, tv = 10,
                         kv = 0.01, v = 0, AP_length = 10, A = 1, tau = 10,
                               other = inh_dict)
 n_args_post_inh_pr_2 = get_dict(name = 'inh_2', n_type = 'inh_pr', M = 10, E = 5,
-                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
+                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 3, tv = 10,
                         kv = 0.01, v = 0, AP_length = 10, A = 1, tau = 10,
                               other = inh_dict)
 n_args_post_inh_pr_3 = get_dict(name = 'inh_3', n_type = 'inh_pr', M = 10, E = 5,
-                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
+                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 3, tv = 10,
                         kv = 0.01, v = 0, AP_length = 10, A = 1, tau = 10,
                               other = inh_dict)
 
 
 n_args_post_inh_pr_4 = get_dict(name = 'inh_4', n_type = 'inh_pr', M = 10, E = 5,
-                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 0.2, tv = 10,
+                        k = 1, pr = 0.5, f = 1, v0 = 0, vth = 3, tv = 10,
                         kv = 0.01, v = 0, AP_length = 10, A = 1, tau = 10,
                               other = inh_dict)
 
@@ -405,29 +405,52 @@ N1.describe()
 N3.describe()
 
 
-p_array = [0.2, 0.5, 0.8] 
+
+#Test to update voltages sequentially
+
+p_array = [0.7, 0.7] 
 n_tests = 1000
 reaction_times = generate_AP_times(p_array, n_tests) #a[i] is the i-th instance of time
 
-#Test to update voltages sequentially
+
 N1 = Neuron(n_args_ex, n_tests)
 N2 = Neuron(n_args_post_inh_pr, n_tests)
 N3 = Neuron(n_args_post_inh_pr_2, n_tests)
 N4 = Neuron(n_args_post_inh_pr_3, n_tests)
 N5 = Neuron(n_args_post_inh_pr_4, n_tests)
 make_pre_post_connections([[N1, N3], [N1, N4], [N2, N4], [N2, N5]])
-N2.AP()
-N1.describe()
-N3.describe()
+
+##N2.AP()
+##N1.describe()
+##N3.describe()
 
 #List of firing neurons
 firing_neurons = [N1, N2]
 
-def update_network(firing_neurons):
-    for FN in firing_neurons:
+def update_network(firing_neurons, events):
+    
+    #MAY HAVE ISSUES IF NETWORK HAS FEEDBACK LOOPS
+    #BECOMES TOO COMPLEX INFINITE RECURSION
+    
+    active_firing_neurons = []
+    for i in range(len(events)):
+        if events[i] == 1:
+            active_firing_neurons.append(firing_neurons[i])
+            
+    new_firing_neurons = []
+    for FN in active_firing_neurons:
         FN.AP()
+        for FN_2_key in FN.post().keys():
+            if FN.post()[FN_2_key].v >= \
+               FN.post()[FN_2_key].vth:
+                new_firing_neurons.append(FN.post()[FN_2_key])
+    if new_firing_neurons != []:
+        new_events = np.ones(len(new_firing_neurons))
+        for k in new_firing_neurons:
+            k.v = 0
+        update_network(new_firing_neurons, new_events)
 
-update_network(firing_neurons) #Updates all the post neurons in the firing network.
+update_network(firing_neurons, reaction_times[0]) #Updates all the post neurons in the firing network.
     
 
 ##Correctly updates N1 and N3 that are connected from N2.  
