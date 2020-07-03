@@ -73,7 +73,18 @@ class Neuron:
 #
         hist_len = 10
         historical_pre = np.zeros(hist_len)
-        self.voltage_queue = queue.Queue()
+        self.queue_size = 10
+        self.voltage_queue = Queue(queue_size)
+        
+        self.net_voltage_history
+        #Net voltage history
+        #Voltage history for each presynaptic neuron contribution
+        #Every instance, update the net and the contributions by
+        #adding the front value from the queue.  Then shift the queue.
+
+        
+        #If AP, then voltage_queue.set_values(AP) but add the value it's currently
+        #at to the first one and then set_values.
 
 #
         
@@ -140,7 +151,7 @@ class Queue:
     def __init__(self, q_size):
         self.q_size = q_size
         
-        self.positions_dict = {'p{}'.format(i):i for i in range(self.q_size)}
+        self.positions_dict = {'p{}'.format(i):0 for i in range(self.q_size)}
 
     def rotate_positions(self):
         for i in range(len(self.positions_dict.keys()) - 1):
@@ -154,17 +165,28 @@ class Queue:
         return self.__dict__
 
     def convert_to_list(self):
-        return [float(v) for i,v in self.positions_dict]
-    
+        return [self.positions_dict['p{}'.format(i)] for i in range(len(self.positions_dict.keys()))]
 
-        
+    def set_values(self, values):
+        for i in range(len(values)):
+            self.positions_dict['p{}'.format(i)] = values[i]
+            
+    def reset(self):
+        for i in range(self.q_size):
+            self.positions_dict['p{}'.format(i)] = 0      
 
+#Queue tests
 q = Queue(10)
 
 qq = q.convert_to_list()
 
 q.display_values()
 q.rotate_positions()
+q.display_values()
+
+q.set_values(range(10))
+q.display_values()
+q.reset()
 q.display_values()
         
         
