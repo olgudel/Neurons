@@ -74,8 +74,10 @@ class Neuron:
         self.n_tests = n_tests
 
         self.preneuron_voltage_contributions = {}
+
+        self.contribution_queues = {}
         
-        self.queue_size = 10
+        self.queue_size = self.AP_length
         self.voltage_queue = Queue(self.queue_size)
         
         self.net_voltage_history = np.zeros(n_tests)
@@ -103,7 +105,7 @@ class Neuron:
     def add_pre(self, N):
         #Add a neuron to the pre_connection_list
         self.pre_connections[N.name] = N
-        self.preneuron_voltage_contributions[N.name] = np.zeros(self.AP_length)
+        self.preneuron_voltage_contributions[N.name] = Queue(self.AP_length)
 
     
     def add_post(self, N):
@@ -126,18 +128,18 @@ class Neuron:
 ##            self.f
 ##            self.tv
             pc.v += 1
-            pc.preneuron_voltage_contributions[self.name] = AP_function()
 
-            #TIMER IS USED ABOVE HERE
-            
-        def update_net_voltage():
-            self.net_voltage_sum = np.zeros(self.AP_length)
-            for name, contribution in self.preneuron_voltage_contributions:
-                self.net_voltage_sum += contribution 
-            
-            self.net_voltage_history[self.timer:self.timer+self.AP_length] = \
-                [self.preneuron_voltage_contributions[name]]
-            
+            pc.voltage_queue.set_values(AP_function)
+            pc.preneuron_voltage_contributions[self.name] = pc.voltage_queue
+           
+##        def update_net_voltage():
+##            self.net_voltage_sum = np.zeros(self.AP_length)
+##            for name, contribution in self.preneuron_voltage_contributions:
+##                self.net_voltage_sum += contribution 
+##            
+##            self.net_voltage_history[self.timer:self.timer+self.AP_length] = \
+##                [self.preneuron_voltage_contributions[name]]
+##            
 
         if self.n_type == 'ex':
             for name in self.post_connections.keys():
@@ -260,10 +262,36 @@ def make_pre_post_connections(connection_list):
     
     """
     for i in range(len(connection_list)):
-        pre_n = connection_list[i][0]
-        post_n = connection_list[i][1]
-        pre_n.add_post(post_n)
-        post_n.add_pre(pre_n)
+
+        if (type(connection_list[i][0]) != list) and (type(connection_list[i][1]) != list):
+                pre_n = connection_list[i][0]
+                post_n = connection_list[i][1]
+                pre_n.add_post(post_n)
+                post_n.add_pre(pre_n)
+                    
+        if (type(connection_list[i][0]) == list) and (type(connection_list[i][1]) == list):
+            for j in range(len(connection_list[i][0])):
+                for k in range(len(connection_list[i][1])):
+                    pre_n = connection_list[i][0][j]
+                    post_n = connection_list[i][1][k]
+                    pre_n.add_post(post_n)
+                    post_n.add_pre(pre_n)
+                    
+        if (type(connection_list[i][0]) == list) and (type(connection_list[i][1]) != list):
+            post_n = connection_list[i][1]
+            for j in range(len(connection_list[i][0])):
+                pre_n = connection_list[i][0][j]
+                pre_n.add_post(post_n)
+                post_n.add_pre(pre_n)
+                
+        if (type(connection_list[i][0]) != list) and (type(connection_list[i][1]) == list):
+            
+            pre_n = connection_list[i][0]
+            for j in range(len(connection_list[i][1])):
+                post_n = connection_list[i][1][j]
+                pre_n.add_post(post_n)
+                post_n.add_pre(pre_n)
+            
 
 def generate_AP_times(p_array, n_tests):
     """
@@ -300,10 +328,65 @@ def generate_AP_times(p_array, n_tests):
                 
     return reactions_array.astype(int).T
 
+def generate_test_neurons(n, n_args_ex):
+    test_args = n_args_ex.copy()
+    neuron_dict = {}
+    for i in range(1, n+1):
+        test_args['name'] = 'n{}'.format(i)
+        neuron_dict[i] = Neuron(test_args, n_tests)
+        
+    return neuron_dict
 
-p_array = [0.2, 0.5, 0.8] 
-n_tests = 1000
-a = generate_AP_times(p_array, n_tests) #a[i] is the i-th instance of time
+def update_network(firing_neurons, events):
+    """
+    Firing_neurons is a list of neurons, events is a list of 0's and 1's.
+    If the i-th event is a 1, fire firing_neurons[i], otherwise do nothing.
+    
+    It updates all the post neurons of the firing neurons.
+
+    Arguments
+    ---------
+
+    firing_neurons : (list)
+                     List of neurons
+    events : (list)
+            List of 0's and 1's that indicate whether or not firing_neurons[i]
+            will fire an action potential or not.
+    
+    """
+    
+    #MAY HAVE ISSUES IF NETWORK HAS FEEDBACK LOOPS
+    #BECOMES TOO COMPLEX - INFINITE RECURSION
+
+    if len(firing_neurons) != len(events):
+        raise Exception('Firing neurons and events are not the same length.')
+
+    #Get all the active firing neurons for this instance.
+    active_firing_neurons = []
+    for i in range(len(events)):
+        if events[i] == 1:
+            active_firing_neurons.append(firing_neurons[i])
+
+    #Initiate action potentials from the active firing neurons.
+    #If post neurons after the pre neuron AP's reach a voltage over the threshold
+    #then initiate action potentials in those neurons and set their voltages to 0.
+    new_firing_neurons = []
+    for FN in active_firing_neurons:
+        FN.AP()
+        for FN_2_key in FN.post().keys():
+            if FN.post()[FN_2_key].v >= \
+               FN.post()[FN_2_key].vth:
+                new_firing_neurons.append(FN.post()[FN_2_key])
+    if new_firing_neurons != []:
+        new_events = np.ones(len(new_firing_neurons))
+        for k in new_firing_neurons:
+            k.v = 0
+        update_network(new_firing_neurons, new_events) #Recursive step.
+
+
+##p_array = [0.2, 0.5, 0.8] 
+##n_tests = 1000
+##a = generate_AP_times(p_array, n_tests) #a[i] is the i-th instance of time
 
 
 ################################################################################
@@ -393,25 +476,34 @@ make_pre_post_connections(connection_list)
 ##N1.preneuron_voltage_contributions
 
 
-#Test for connecting N2 to N1 and N3
-N1 = Neuron(n_args_ex, n_tests)
-N2 = Neuron(n_args_post_inh_pr, n_tests)
-N3 = Neuron(n_args_post_inh_pr_2, n_tests)
-N4 = Neuron(n_args_post_inh_pr_3, n_tests)
-N5 = Neuron(n_args_post_inh_pr_4, n_tests)
-make_pre_post_connections([[N2, N1], [N2, N3]])
-N2.AP()
-N1.describe()
-N3.describe()
+
+###Test for connecting N2 to N1 and N3
+##N1 = Neuron(n_args_ex, n_tests)
+##N2 = Neuron(n_args_post_inh_pr, n_tests)
+##N3 = Neuron(n_args_post_inh_pr_2, n_tests)
+##N4 = Neuron(n_args_post_inh_pr_3, n_tests)
+##N5 = Neuron(n_args_post_inh_pr_4, n_tests)
+##make_pre_post_connections([[N2, N1], [N2, N3]])
+##N2.AP()
+##N1.describe()
+##N3.describe()
+##
+##
+
 
 
 
 #Test to update voltages sequentially
 
+args_dict_list = [n_args_ex, n_args_post_inh_pr,
+                  n_args_post_inh_pr_2, n_args_post_inh_pr_3,
+                  n_args_post_inh_pr_4]
+
+neuron_args_check(args_dict_list, template_args)
+
 p_array = [0.7, 0.7] 
 n_tests = 1000
 reaction_times = generate_AP_times(p_array, n_tests) #a[i] is the i-th instance of time
-
 
 N1 = Neuron(n_args_ex, n_tests)
 N2 = Neuron(n_args_post_inh_pr, n_tests)
@@ -420,47 +512,45 @@ N4 = Neuron(n_args_post_inh_pr_3, n_tests)
 N5 = Neuron(n_args_post_inh_pr_4, n_tests)
 make_pre_post_connections([[N1, N3], [N1, N4], [N2, N4], [N2, N5]])
 
-##N2.AP()
-##N1.describe()
-##N3.describe()
-
-#List of firing neurons
-firing_neurons = [N1, N2]
-
-def update_network(firing_neurons, events):
-    
-    #MAY HAVE ISSUES IF NETWORK HAS FEEDBACK LOOPS
-    #BECOMES TOO COMPLEX INFINITE RECURSION
-    
-    active_firing_neurons = []
-    for i in range(len(events)):
-        if events[i] == 1:
-            active_firing_neurons.append(firing_neurons[i])
-            
-    new_firing_neurons = []
-    for FN in active_firing_neurons:
-        FN.AP()
-        for FN_2_key in FN.post().keys():
-            if FN.post()[FN_2_key].v >= \
-               FN.post()[FN_2_key].vth:
-                new_firing_neurons.append(FN.post()[FN_2_key])
-    if new_firing_neurons != []:
-        new_events = np.ones(len(new_firing_neurons))
-        for k in new_firing_neurons:
-            k.v = 0
-        update_network(new_firing_neurons, new_events)
-
+firing_neurons = [N1, N2] #List of firing neurons
 update_network(firing_neurons, reaction_times[0]) #Updates all the post neurons in the firing network.
-    
+print(N3.v, N4.v, N5.v)    
 
-##Correctly updates N1 and N3 that are connected from N2.  
+#Correctly updates N1 and N3 that are connected from N2.  
 
 
 
-N1.pr
-N2.AP()
-N1.v
-N1.pr
-N1.describe()
 
-N1.preneuron_voltage_contributions
+
+#Test 4 - Generate neurons and see how sequences work.
+#Setup: 1-(3,4), 2-(4,5), 3-(6), 4-(6,7), 5-(7), 6-(8), 7-(8)
+
+p_array = [0.7, 0.7] 
+n_tests = 1000
+reaction_times = generate_AP_times(p_array, n_tests) #a[i] is the i-th instance of time
+
+tn = generate_test_neurons(8, n_args_ex) #8 test neurons, modeled after n_args_ex
+
+
+c1 = [tn[1], [tn[3], tn[4]]]
+c2 = [tn[2], [tn[4], tn[5]]]
+c3 = [[tn[3], tn[4]], tn[6] ]
+c4 = [[tn[4], tn[5]], tn[7]]
+c5 = [[tn[6], tn[7]], tn[8]]
+
+connection_list = [c1, c2, c3, c4, c5]
+
+
+make_pre_post_connections(connection_list)
+
+firing_neurons = [tn[1], tn[2]]
+
+print(' ',tn[1].v, tn[2].v, '\n', tn[3].v, tn[4].v, tn[5].v, '\n ',
+      tn[6].v, tn[7].v, '\n  ', tn[8].v)
+
+test_reactions = [[0,0], [0,1], [1,0], [1,1]]
+
+update_network(firing_neurons, test_reactions[np.random.randint(4)])
+
+print(' ',tn[1].v, tn[2].v, '\n', tn[3].v, tn[4].v, tn[5].v, '\n ',
+      tn[6].v, tn[7].v, '\n  ', tn[8].v)
