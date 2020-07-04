@@ -129,8 +129,7 @@ class Neuron:
 ##            self.tv
             pc.v += 1
 
-            pc.voltage_queue.set_values(AP_function)
-            pc.preneuron_voltage_contributions[self.name] = pc.voltage_queue
+            pc.preneuron_voltage_contributions[self.name].update_values(AP_function())
            
 ##        def update_net_voltage():
 ##            self.net_voltage_sum = np.zeros(self.AP_length)
@@ -193,6 +192,10 @@ class Queue:
     def set_values(self, values):
         for i in range(len(values)):
             self.positions_dict['p{}'.format(i)] = values[i]
+            
+    def update_values(self, values):
+        for i in range(len(values)):
+            self.positions_dict['p{}'.format(i)] += values[i]
             
     def reset(self):
         for i in range(self.q_size):
