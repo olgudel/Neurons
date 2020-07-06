@@ -136,12 +136,13 @@ class Neuron:
         if self.fired_an_AP == True:
             for k2 in self.preneuron_voltage_contributions.keys():
                 self.preneuron_voltage_contributions[k2].reset()
-            print('FIRED {}'.format(k2))
+                print('FIRED {}'.format(k2))
 
 
     def update_v(self):
         self.v = sum([self.voltage_sum[key] for key in self.voltage_sum.keys()])
- 
+
+    
     def no_AP(self):
         
         #If no action potential was received by the 
@@ -151,6 +152,9 @@ class Neuron:
             self.voltage_sum[name] = self.preneuron_voltage_contributions[name].positions_dict['p0']
                 
     def AP(self):
+        self.v = 0
+        for name in self.preneuron_voltage_contributions.keys():
+            self.voltage_sum[name] = 0
         #Generate an presynaptic action potential
         #into the postsynaptic neurons with their associated effects
         
@@ -199,16 +203,19 @@ class Neuron:
 ##            
         
         if self.n_type == 'ex':
-            for name in self.post_connections.keys():
-                update_voltage_contributions(self.post_connections[name])
+
+            for post_neuron_name in self.post_connections.keys():
+                update_voltage_contributions(self.post_connections[post_neuron_name])
 
         #Directly changes the voltage of the neuron    
         if self.n_type == 'inh_v':
+
             for name in self.post_connections.keys():
                 update_voltage_contributions(self.post_connections[name])
 
 
         if self.n_type == 'inh_pr':
+
             for name in self.post_connections.keys():
                 if self.post_connections[name].pr_changed == False:
                     self.post_connections[name].pr *= self.other['pr']
@@ -402,6 +409,7 @@ def generate_test_neurons(n, n_args_ex):
         
     return neuron_dict
 
+
 def update_network(firing_neurons, events):
     """
     Firing_neurons is a list of neurons, events is a list of 0's and 1's.
@@ -426,6 +434,7 @@ def update_network(firing_neurons, events):
     if len(firing_neurons) != len(events):
         raise Exception('Firing neurons and events are not the same length.')
 
+
     #Get all the active firing neurons for this instance.
     active_firing_neurons = []
     for i in range(len(events)):
@@ -444,10 +453,10 @@ def update_network(firing_neurons, events):
         for neuron_name in FN.post().keys():
             neurons_that_received_APs.add(neuron_name)
         
-        for FN_2_key in FN.post().keys():
-            if FN.post()[FN_2_key].v >= \
-               FN.post()[FN_2_key].vth:
-                new_firing_neurons.append(FN.post()[FN_2_key])
+        for post_neuron_name in FN.post().keys():
+            if FN.post()[post_neuron_name].v >= \
+               FN.post()[post_neuron_name].vth:
+                new_firing_neurons.append(FN.post()[post_neuron_name])
 
     #New 0
                 
@@ -474,6 +483,16 @@ def continue_no_AP_neurons(full_neuron_list):
         if neuron.received_an_AP == False:
             neuron.no_AP()
         neuron.received_an_AP = False
+
+def update_v(neuron_list):
+    #Update the net-voltage of each neuron.
+    for neuron in neuron_list:
+        if neuron.v >= neuron.vth:           
+            for pre_name in neuron.preneuron_voltage_contributions.keys():
+                neuron.preneuron_voltage_contributions[pre_name].reset()
+        neuron.update_v()
+            
+
         
 ################################################################################
 #
@@ -696,6 +715,7 @@ firing_neurons = [tn[1], tn[2]]
 
 update_network(firing_neurons, [1,1])
 continue_no_AP_neurons(full_neuron_list)
+update_v(full_neuron_list)
 ##print(get_v_sum(tn[3]), get_v_sum(tn[4]), get_v_sum(tn[5]), '\n ',
 ##          get_v_sum(tn[6]), get_v_sum(tn[7]), '\n  ', get_v_sum(tn[8]))
 print(tn[3].v, tn[4].v, tn[5].v, '\n ',
@@ -775,12 +795,17 @@ full_neuron_list = [N_ex, N_inh, N_post]
 firing_neurons = [N_ex, N_inh]
 
 
-update_network(firing_neurons, [0,0])
+
+#
+update_network(firing_neurons, [1,1])
 continue_no_AP_neurons(full_neuron_list)
-N_post.update_v()
+update_v(full_neuron_list)
+
 print(N_post.v)
 print(N_post.voltage_sum)
 print(N_post.display_queues())
+#
+
 
 
 print(N_post.voltage_sum)
