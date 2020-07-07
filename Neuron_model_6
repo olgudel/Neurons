@@ -749,7 +749,8 @@ firing_neurons = [tn[1], tn[2]]
 
 initiate_APs_in_network(firing_neurons, [1,1], full_neuron_list)
 
-
+for neuron in full_neuron_list:
+    print(neuron.name, neuron.voltage())
 
 print(tn[3].voltage(), tn[4].voltage(), tn[5].voltage(), '\n ',
           tn[6].voltage(), tn[7].voltage(), '\n  ', tn[8].voltage())
@@ -772,7 +773,8 @@ for i in range(20):
 
 n_tests = 1000
 
-p_array = [0.5, 0.3] 
+p_array = [0.5, 0.3]
+
 reaction_times = generate_AP_times(p_array, n_tests) 
 
 N_ex_dict = get_dict(name = 'N_ex', n_type = 'ex', M = 100, E = 50, k = 1,
@@ -803,15 +805,12 @@ N_post_2 = Neuron(N_post_dict_2, n_tests)
 
 c1 = [[N_ex, N_inh], [N_post]]
 c2 = [[N_post], [N_post_2]]
+
 connections = [c1, c2]
 make_pre_post_connections(connections)
 
-
-
 full_neuron_list = [N_ex, N_inh, N_post, N_post_2]
 firing_neurons = [N_ex, N_inh]
-
-
 
 #
 initiate_APs_in_network(firing_neurons, [1,1], full_neuron_list)
