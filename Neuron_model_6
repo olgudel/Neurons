@@ -457,7 +457,8 @@ def update_network(firing_neurons, events):
             neurons_that_received_APs.add(neuron_name)
         
         for post_neuron_name in FN.post().keys():
-            #CHANGED----------------------.v to .voltage()
+            #QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ
+            #CHANGED----------------------v to voltage() #START HERE
             if FN.post()[post_neuron_name].voltage() >= \
                FN.post()[post_neuron_name].vth:
                 new_firing_neurons.append(FN.post()[post_neuron_name])
