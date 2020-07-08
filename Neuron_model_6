@@ -1,7 +1,3 @@
-
-#ORIGINAL
-
-
 ###############################################################################
 ###############################################################################                
 ###############################################################################
@@ -184,6 +180,8 @@ class Neuron:
         if self.initializing_AP_neuron == False:
             if self.refractory_period_counter == 0:
                 self.refractory_period_counter = self.refractory_period
+            if self.refractory_period_counter != 0:
+                self.refractory_period_counter -= 1
                 
 
 
@@ -199,22 +197,18 @@ class Neuron:
             
             def AP_function():
                 return self.A * np.exp(-np.arange(self.AP_length)/self.tau)
-                
-##            self.M
-##            self.E
-##            self.k
-##            self.pr
-##            self.f
-##            self.tv
+                #THIS IS THE FUNCTION THAT I NEED TO MODIFY WITH ZAHRA'S CODE
 
             #Rotate the voltage queues
             #Update the values with an action potential
             #Add the voltage contribuiton to the voltage sum
             pc.preneuron_voltage_contributions[self.name].rotate_positions()
-            pc.preneuron_voltage_contributions[self.name].update_values(AP_function())
+            if pc.refractory_period_counter == 0:
+                pc.preneuron_voltage_contributions[self.name].update_values(AP_function())
             pc.voltage_sum[self.name] = pc.preneuron_voltage_contributions[self.name].positions_dict['p0']
     
-            pc.received_an_AP = True
+            if pc.refractory_period_counter == 0:
+                pc.received_an_AP = True
  
         if self.n_type == 'ex':
 
@@ -820,7 +814,7 @@ reaction_times = generate_AP_times(p_array, n_tests)
 
 n_args_test = get_dict(name = 'ex_1', n_type = 'ex', M = 10, E = 5, k = 1,
                        pr = 0.5, f = 1, v0 = 0,
-                       vth = 3, tv = 10, kv = 0.01, v = 0, refractory_period = 3,
+                       vth = 4, tv = 10, kv = 0.01, v = 0, refractory_period = 3,
                        AP_length = 10, A= 1, tau = 10, other = None)
 
 #8 test neurons, modeled after n_args_ex
@@ -856,12 +850,12 @@ print(tn[3].voltage(), tn[4].voltage(), tn[5].voltage(), '\n ',
           tn[6].voltage(), tn[7].voltage(), '\n  ', tn[8].voltage())
 
 
-for i in range(20):
-    update_network(firing_neurons, reaction_times[i])
-    continue_no_AP_neurons(full_neuron_list)
-    print('-----\nReaction({}):{}\n '.format(i,reaction_times[i]),
-          tn[3].voltage(), tn[4].voltage(), tn[5].voltage(), '\n ',
-          tn[6].voltage(), tn[7].voltage(), '\n  ', tn[8].voltage())
+##for i in range(20):
+##    update_network(firing_neurons, reaction_times[i])
+##    continue_no_AP_neurons(full_neuron_list)
+##    print('-----\nReaction({}):{}\n '.format(i,reaction_times[i]),
+##          tn[3].voltage(), tn[4].voltage(), tn[5].voltage(), '\n ',
+##          tn[6].voltage(), tn[7].voltage(), '\n  ', tn[8].voltage())
 
 
 
