@@ -781,9 +781,9 @@ firing_neurons = [tn[1], tn[2]]
 
 initiate_APs_in_network(firing_neurons, [1,1], full_neuron_list)
 
-for neuron in full_neuron_list:
-    print(neuron.name, neuron.voltage())
-
+##for neuron in full_neuron_list:
+##    print(neuron.name, neuron.voltage())
+##
 print(tn[3].voltage(), tn[4].voltage(), tn[5].voltage(), '\n ',
           tn[6].voltage(), tn[7].voltage(), '\n  ', tn[8].voltage())
 
@@ -885,18 +885,18 @@ template_args = make_template(template_names)
 
 N_ex_dict = get_dict(name = 'N_ex', n_type = 'ex', M = 100, E = 50, k = 1,
                        pr = 0.6, f = 1, v0 = 0,
-                       vth = 10, tv = 10, kv = 0.01, v = 0, AP_length = 10,
+                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
                      refractory_period = 3, A= 1, tau = 10, other = None)
 N_inh_dict = get_dict(name = 'N_inh', n_type = 'inh_v', M = 45, E = 15, k = 1,
                        pr = 0.3, f = 1, v0 = 0,
-                       vth = 10, tv = 10, kv = 0.01, v = 0, AP_length = 10,
-                     refractory_period = 3, A= 1, tau = 10, other = None)
+                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
+                     refractory_period = 3, A= -0.5, tau = 10, other = None)
 N_post_dict = get_dict(name = 'N_post', n_type = 'ex', M = 45, E = 15, k = 1,
                        pr = 0.3, f = 1, v0 = 0,
-                       vth = 10, tv = 10, kv = 0.01, v = 0, AP_length = 10,
+                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
                      refractory_period = 3, A= 1, tau = 10, other = None)
 
-N_post_dict_2 = get_dict(name = 'N_post', n_type = 'ex', M = 45, E = 15, k = 1,
+N_post_dict_2 = get_dict(name = 'N_post_2', n_type = 'ex', M = 45, E = 15, k = 1,
                        pr = 0.3, f = 1, v0 = 0,
                        vth = 10, tv = 10, kv = 0.01, v = 0, AP_length = 10,
                      refractory_period = 3, A= 1, tau = 10, other = None)
@@ -925,11 +925,12 @@ initiate_APs_in_network(firing_neurons, [1,1], full_neuron_list)
 
 print(N_post.voltage())
 print(N_post.voltage_sum)
-print(N_post.display_queues())
+N_post.display_queues()
 
 print('\n')
 print(N_post_2.voltage())
 print(N_post_2.voltage_sum)
-print(N_post_2.display_queues())
+N_post_2.display_queues()
+
 #
 
