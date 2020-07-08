@@ -1,16 +1,30 @@
-################################################################################
+
+#ORIGINAL
+
+
+###############################################################################
+###############################################################################                
+###############################################################################
 #
-#                                Libraries
+#                              Libraries
 #
-################################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
 import numpy as np
 import matplotlib.pyplot as plt
 
-################################################################################
+###############################################################################
+###############################################################################                
+###############################################################################
 #
-#                                 Classes
+#                              Classes
 #
-################################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
 
 class Neuron:
     """
@@ -56,6 +70,7 @@ class Neuron:
 ##        
 
         
+        self.refractory_period_counter = 0
         #Incase the neuron is inhibited, keep a copy of the original values
         self.pr_original = self.pr
         self.f_original = self.f
@@ -74,6 +89,9 @@ class Neuron:
 
         
 #
+
+        #Marker for when the neuron receives an AP within the refractory period.
+        self.initializing_AP_neuron = False
         
 
         #Dictionary that collects all the voltage values from each preneuron.
@@ -146,8 +164,10 @@ class Neuron:
 ##    
     def no_AP(self):
         
-        #If no action potential was received by the 
-        #self.v = 0
+        #If no action potential was received this instance, it will leak voltage
+        if self.refractory_period_counter >= 1:
+            self.refractory_period_counter -= 1
+
         for name in self.preneuron_voltage_contributions.keys():
             self.preneuron_voltage_contributions[name].rotate_positions()
             self.voltage_sum[name] = self.preneuron_voltage_contributions[name].positions_dict['p0']
@@ -157,7 +177,18 @@ class Neuron:
         return round(voltage_number, 3)
                 
     def AP(self):
-        self.v = 0
+
+        if self.initializing_AP_neuron == True:
+            self.refractory_period_counter = 0
+            
+        if self.initializing_AP_neuron == False:
+            if self.refractory_period_counter == 0:
+                self.refractory_period_counter = self.refractory_period
+                
+
+
+            
+
         for name in self.preneuron_voltage_contributions.keys():
             self.voltage_sum[name] = 0
         #Generate an presynaptic action potential
@@ -176,37 +207,15 @@ class Neuron:
 ##            self.f
 ##            self.tv
 
-            #Update the preneuron voltage contribution +=
-            #Update voltage v
-            #Rotate the preneuron voltage contribution queue.
+            #Rotate the voltage queues
+            #Update the values with an action potential
+            #Add the voltage contribuiton to the voltage sum
             pc.preneuron_voltage_contributions[self.name].rotate_positions()
             pc.preneuron_voltage_contributions[self.name].update_values(AP_function())
             pc.voltage_sum[self.name] = pc.preneuron_voltage_contributions[self.name].positions_dict['p0']
     
-            #NEED TO FIX THIS BELOW.
-
-            #Make v a dict, update the key values by active contributions.
-            #Test things on sum of values in dict.
-
-            #pc.v += pc.preneuron_voltage_contributions[self.name].positions_dict['p0']
-
-            
-##            if len(pc.pre()) > 1:
-##                pc.v += pc.preneuron_voltage_contributions[self.name].positions_dict['p0']
-##            else:
-##                pc.v = pc.preneuron_voltage_contributions[self.name].positions_dict['p0']
-                
             pc.received_an_AP = True
-            
-##        def update_net_voltage():
-##            self.net_voltage_sum = np.zeros(self.AP_length)
-##            for name, contribution in self.preneuron_voltage_contributions:
-##                self.net_voltage_sum += contribution 
-##            
-##            self.net_voltage_history[self.timer:self.timer+self.AP_length] = \
-##                [self.preneuron_voltage_contributions[name]]
-##            
-        
+ 
         if self.n_type == 'ex':
 
             for post_neuron_name in self.post_connections.keys():
@@ -294,11 +303,16 @@ class Queue:
         
         
                 
-################################################################################
+###############################################################################
+###############################################################################                
+###############################################################################
 #
-#                                Functions
+#                              Functions
 #
-################################################################################
+###############################################################################
+###############################################################################
+###############################################################################
+
         
 def get_dict(**x):
     """
@@ -726,14 +740,16 @@ N2.display_queues()
 #Test 3 : End  
 
 
-
-
-
+###############################################################################
+###############################################################################                
 ###############################################################################
 #
-#                       Network test: 12, 345, 67, 8
+#                              Network test: 12, 345, 67, 8
 #
 ###############################################################################
+###############################################################################
+###############################################################################
+
 
 p_array = [0.5, 0.2] 
 n_tests = 1000
@@ -787,9 +803,13 @@ for i in range(20):
 
 
 ###############################################################################
+###############################################################################                
+###############################################################################
 #
 #                                Feedback Test
 #
+###############################################################################
+###############################################################################
 ###############################################################################
 
 p_array = [0.5, 0.2] 
@@ -846,9 +866,13 @@ for i in range(20):
 
 
 ###############################################################################
+###############################################################################                
+###############################################################################
 #
 #                                Final Test
 #
+###############################################################################
+###############################################################################
 ###############################################################################
 
 
@@ -857,6 +881,11 @@ n_tests = 1000
 p_array = [0.5, 0.3]
 
 reaction_times = generate_AP_times(p_array, n_tests)
+
+template_names = ['name', 'n_type', 'M', 'E', 'k',
+                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'v',
+                  'AP_length','refractory_period', 'A','tau', 'other']
+template_args = make_template(template_names)
 
 
 
@@ -894,6 +923,8 @@ make_pre_post_connections(connections)
 
 full_neuron_list = [N_ex, N_inh, N_post, N_post_2]
 firing_neurons = [N_ex, N_inh]
+for neuron in firing_neurons:
+    neuron.initializing_AP_neuron = True
 
 #
 initiate_APs_in_network(firing_neurons, [1,1], full_neuron_list)
