@@ -140,8 +140,8 @@ class Neuron:
 
     def fired_AP_check(self):
         if self.fired_an_AP == True:
-            for k2 in self.preneuron_voltage_contributions.keys():
-                self.preneuron_voltage_contributions[k2].reset()
+            for preneuron_name in self.preneuron_voltage_contributions.keys():
+                self.preneuron_voltage_contributions[preneuron_name].reset()
         #print('FIRED {}'.format(self.name))
 
 
@@ -154,7 +154,8 @@ class Neuron:
         for name in self.preneuron_voltage_contributions.keys():
             self.preneuron_voltage_contributions[name].rotate_positions()
             self.voltage_sum[name] = self.preneuron_voltage_contributions[name].positions_dict['p0']
-
+        self.fired_an_AP = False
+        
     def voltage(self):
         """
         Return the current voltage of the neuron
@@ -513,8 +514,12 @@ def initiate_APs_in_network(firing_neurons, event, full_neuron_list):
     
     update_network(firing_neurons, full_neuron_list, event)
     continue_no_AP_neurons(full_neuron_list)
+    
     for neuron in set(full_neuron_list) - set(firing_neurons):
-        neuron.voltage_history.append(neuron.voltage())
+        if neuron.fired_an_AP == False:
+            neuron.voltage_history.append(neuron.voltage())
+        else:
+            neuron.voltage_history.append(neuron.vth)
  
 def merge_dicts(*args):
     my_dict = {}
@@ -1006,7 +1011,7 @@ N_post_dict = get_dict(name = 'N_post', n_type = 'ex', M = 45, E = 15, k = 1,
 
 N_post_dict_2 = get_dict(name = 'N_post_2', n_type = 'ex', M = 45, E = 15, k = 1,
                        pr = 0.3, f = 1, v0 = 0,
-                       vth = 10, tv = 10, kv = 0.01, v = 0, AP_length = 10,
+                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
                      refractory_period = 3, A= 1, tau = 10, other = None)
 
 args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
@@ -1027,15 +1032,18 @@ full_neuron_list = [N_ex, N_inh, N_post, N_post_2]
 firing_neurons = [N_ex, N_inh]
 
 
-#
-initiate_APs_in_network(firing_neurons, [1,1], full_neuron_list)
+###Individal AP firing test
 
-print(N_post.voltage())
-N_post.display_queues()
-
-print('\n')
-print(N_post_2.voltage())
-N_post_2.display_queues()
+##initiate_APs_in_network(firing_neurons, [1,1], full_neuron_list)
+##
+##print(N_post.voltage())
+##print(N_post.fired_an_AP)
+##print(N_post.refractory_period_counter)
+##N_post.display_queues()
+##
+##print('\n')
+##print(N_post_2.voltage())
+##N_post_2.display_queues()
 #
 
 
