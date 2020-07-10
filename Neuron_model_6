@@ -65,9 +65,11 @@ class Neuron:
 ##        self.A, self.tau, self.other
 ##        
 
-        
+        self.n_tests = n_tests
+
+        #
         self.refractory_period_counter = 0
-        #Incase the neuron is inhibited, keep a copy of the original values
+        #Incase the neuron is inhibited with effects, keep a copy of the original values
         self.pr_original = self.pr
         self.f_original = self.f
         self.tv_original = self.tv
@@ -97,17 +99,12 @@ class Neuron:
         self.received_an_AP = False
         self.fired_an_AP = False
 
-        self.n_tests = n_tests
+        
 
         self.preneuron_voltage_contributions = {}
-        
-        #Dictionary for Q's to hold the potential future values of the voltage.
-        self.contribution_queues = {}
-        
         self.queue_size = self.AP_length
         self.voltage_queue = Queue(self.queue_size)
-        
-        self.net_voltage_history = np.zeros(n_tests)
+        self.voltage_history = []
 
 
 #
@@ -134,24 +131,18 @@ class Neuron:
         self.post_connections[N.name] = N
 
     def display_queues(self):
+        """
+        Display all the voltage contrabution queues for the neuron.
+        """
         print(self.name) 
         for q in self.preneuron_voltage_contributions.keys():
             print('\t',q, np.around(self.preneuron_voltage_contributions[q].convert_to_list(), 3))
-
-
-##    def over_threshold_check(self):
-##        self.v_sum = 0
-##        for k in self.preneuron_voltage_contributions.keys():
-##            self.v_sum += self.preneuron_voltage_contributions[k].positions_dict['p0']
-##        if self.v_sum >= self.vth:
-##            for k2 in self.preneuron_voltage_contributions.keys():
-##                self.preneuron_voltage_contributions[k2].reset()
 
     def fired_AP_check(self):
         if self.fired_an_AP == True:
             for k2 in self.preneuron_voltage_contributions.keys():
                 self.preneuron_voltage_contributions[k2].reset()
-        print('FIRED {}'.format(self.name))
+        #print('FIRED {}'.format(self.name))
 
 
     def no_AP(self):
@@ -165,6 +156,10 @@ class Neuron:
             self.voltage_sum[name] = self.preneuron_voltage_contributions[name].positions_dict['p0']
 
     def voltage(self):
+        """
+        Return the current voltage of the neuron
+        as the sum of the voltage contributions.
+        """
         voltage_number = sum([self.voltage_sum[name] for name in self.voltage_sum.keys()])
         return round(voltage_number, 3)
                 
@@ -177,11 +172,7 @@ class Neuron:
             if self.refractory_period_counter == 0:
                 self.refractory_period_counter = self.refractory_period
             if self.refractory_period_counter != 0:
-                self.refractory_period_counter -= 1
-                
-
-
-            
+                self.refractory_period_counter -= 1           
 
         for neuron_name in self.preneuron_voltage_contributions.keys():
             self.voltage_sum[neuron_name] = 0
@@ -417,8 +408,8 @@ def generate_AP_times(p_array, n_tests):
                 
     return reactions_array.astype(int).T
 
-def generate_test_neurons(n, n_args_ex):
-    test_args = n_args_ex.copy()
+def generate_test_neurons(n, n_args_test):
+    test_args = n_args_test.copy()
     neuron_dict = {}
     for i in range(1, n+1):
         test_args['name'] = 'n{}'.format(i)
@@ -442,11 +433,16 @@ def update_network(firing_neurons, full_neuron_list, events):
     events : (list)
             List of 0's and 1's that indicate whether or not firing_neurons[i]
             will fire an action potential or not.
+
+
+        
+    MAY HAVE ISSUES IF NETWORK HAS FEEDBACK LOOPS WITH TOO HIGH A VOLTAGE
+    INCREASE SPACED TOO FAR AWAY.
+
+    INFINITE RECURSION        
     
     """
-    
-    #MAY HAVE ISSUES IF NETWORK HAS FEEDBACK LOOPS
-    #BECOMES TOO COMPLEX - INFINITE RECURSION
+
 
     if len(firing_neurons) != len(events):
         raise Exception('Firing neurons and events are not the same length.')
@@ -496,54 +492,35 @@ def update_network(firing_neurons, full_neuron_list, events):
 def continue_no_AP_neurons(full_neuron_list):
     """
     All the neurons that didn't get an action potential have their
-    voltage contribution queues rotated to the next step and their v changed.
+    voltage contribution queues rotated.
     """
     for neuron in full_neuron_list:
         if neuron.received_an_AP == False:
             neuron.no_AP()
         neuron.received_an_AP = False
 
-##def update_v(neuron_list):
-##    #Update the net-voltage of each neuron.
-##    for neuron in neuron_list:
-##        if neuron.v >= neuron.vth:           
-##            for pre_name in neuron.preneuron_voltage_contributions.keys():
-##                neuron.preneuron_voltage_contributions[pre_name].reset()
-##        neuron.update_v()
-            
-##def adjust_if_AP(full_neuron_list):
-##    for neuron in full_neuron_list:
-##        if neuron.v >= neuron.vth:
-##            neuron.AP()
-##            for preneuron_name in neuron.pre().keys():
-##                neuron.preneuron_voltage_contributions[preneuron_name].reset()
-
 def initiate_APs_in_network(firing_neurons, event, full_neuron_list):
     """
 
-    Group together the four functions:(1).update_network,
-    (2.) continue_no_AP_neurons, and (3.) adjust_if_AP,
-    and call them sequentially.
+    Groups together two functions:(1).update_network, and
+    (2.) continue_no_AP_neurons and calls them sequentially.
 
     """
+
     if len(firing_neurons) != len(event):
         exception_str = 'Firing neuron list and events are not same length.'
         raise Exception(exception_str)
     
     update_network(firing_neurons, full_neuron_list, event)
     continue_no_AP_neurons(full_neuron_list)
+    for neuron in set(full_neuron_list) - set(firing_neurons):
+        neuron.voltage_history.append(neuron.voltage())
  
 def merge_dicts(*args):
     my_dict = {}
     for arg in args:
         my_dict.update(arg)
     return my_dict
-
-##def get_v_sum(neuron):
-##    v_sum = np.sum([neuron.preneuron_voltage_contributions[name].positions_dict['p0'] \
-##        for name in neuron.preneuron_voltage_contributions.keys()])
-##    return v_sum
-
 
 ###############################################################################
 ###############################################################################                
@@ -854,82 +831,6 @@ print(tn[3].voltage(), tn[4].voltage(), tn[5].voltage(), '\n ',
 ##          tn[3].voltage(), tn[4].voltage(), tn[5].voltage(), '\n ',
 ##          tn[6].voltage(), tn[7].voltage(), '\n  ', tn[8].voltage())
 
-
-
-###############################################################################
-###############################################################################                
-###############################################################################
-#
-#                                Final Test
-#
-###############################################################################
-###############################################################################
-###############################################################################
-
-
-n_tests = 1000
-
-p_array = [0.5, 0.3]
-
-reaction_times = generate_AP_times(p_array, n_tests)
-
-template_names = ['name', 'n_type', 'M', 'E', 'k',
-                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'v',
-                  'AP_length','refractory_period', 'A','tau', 'other']
-template_args = make_template(template_names)
-
-
-
-N_ex_dict = get_dict(name = 'N_ex', n_type = 'ex', M = 100, E = 50, k = 1,
-                       pr = 0.6, f = 1, v0 = 0,
-                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
-                     refractory_period = 3, A= 1, tau = 10, other = None)
-N_inh_dict = get_dict(name = 'N_inh', n_type = 'inh_v', M = 45, E = 15, k = 1,
-                       pr = 0.3, f = 1, v0 = 0,
-                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
-                     refractory_period = 3, A= -0.5, tau = 10, other = None)
-N_post_dict = get_dict(name = 'N_post', n_type = 'ex', M = 45, E = 15, k = 1,
-                       pr = 0.3, f = 1, v0 = 0,
-                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
-                     refractory_period = 3, A= 1, tau = 10, other = None)
-
-N_post_dict_2 = get_dict(name = 'N_post_2', n_type = 'ex', M = 45, E = 15, k = 1,
-                       pr = 0.3, f = 1, v0 = 0,
-                       vth = 10, tv = 10, kv = 0.01, v = 0, AP_length = 10,
-                     refractory_period = 3, A= 1, tau = 10, other = None)
-
-args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
-neuron_args_check(args_dict_list, template_args)
-
-N_ex = Neuron(N_ex_dict, n_tests)
-N_inh = Neuron(N_inh_dict, n_tests)
-N_post = Neuron(N_post_dict, n_tests)
-N_post_2 = Neuron(N_post_dict_2, n_tests)
-
-c1 = [[N_ex, N_inh], [N_post]]
-c2 = [[N_post], [N_post_2]]
-
-connections = [c1, c2]
-make_pre_post_connections(connections)
-
-full_neuron_list = [N_ex, N_inh, N_post, N_post_2]
-firing_neurons = [N_ex, N_inh]
-for neuron in firing_neurons:
-    neuron.initializing_AP_neuron = True
-
-#
-initiate_APs_in_network(firing_neurons, [1,1], full_neuron_list)
-
-print(N_post.voltage())
-print(N_post.voltage_sum)
-N_post.display_queues()
-
-print('\n')
-print(N_post_2.voltage())
-print(N_post_2.voltage_sum)
-N_post_2.display_queues()
-#
-
 ###############################################################################
 ###############################################################################                
 ###############################################################################
@@ -1065,5 +966,91 @@ for neuron in full_neuron_list:
 ##          tn[3].voltage(), tn[4].voltage(), tn[5].voltage(), '\n ',
 ##          tn[6].voltage(), tn[7].voltage(), '\n  ', tn[8].voltage())
 
+
+###############################################################################
+###############################################################################                
+###############################################################################
+#
+#                                Final Test
+#
+###############################################################################
+###############################################################################
+###############################################################################
+
+
+n_tests = 100
+
+p_array = [0.5, 0.3]
+
+reaction_times = generate_AP_times(p_array, n_tests)
+
+template_names = ['name', 'n_type', 'M', 'E', 'k',
+                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'v',
+                  'AP_length','refractory_period', 'A','tau', 'other']
+template_args = make_template(template_names)
+
+
+
+N_ex_dict = get_dict(name = 'N_ex', n_type = 'ex', M = 100, E = 50, k = 1,
+                       pr = 0.6, f = 1, v0 = 0,
+                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
+                     refractory_period = 3, A= 1, tau = 20, other = None)
+N_inh_dict = get_dict(name = 'N_inh', n_type = 'inh_v', M = 45, E = 15, k = 1,
+                       pr = 0.3, f = 1, v0 = 0,
+                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
+                     refractory_period = 3, A= -0.5, tau = 10, other = None)
+N_post_dict = get_dict(name = 'N_post', n_type = 'ex', M = 45, E = 15, k = 1,
+                       pr = 0.3, f = 1, v0 = 0,
+                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
+                     refractory_period = 3, A= 1, tau = 10, other = None)
+
+N_post_dict_2 = get_dict(name = 'N_post_2', n_type = 'ex', M = 45, E = 15, k = 1,
+                       pr = 0.3, f = 1, v0 = 0,
+                       vth = 10, tv = 10, kv = 0.01, v = 0, AP_length = 10,
+                     refractory_period = 3, A= 1, tau = 10, other = None)
+
+args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
+neuron_args_check(args_dict_list, template_args)
+
+N_ex = Neuron(N_ex_dict, n_tests)
+N_inh = Neuron(N_inh_dict, n_tests)
+N_post = Neuron(N_post_dict, n_tests)
+N_post_2 = Neuron(N_post_dict_2, n_tests)
+
+c1 = [[N_ex, N_inh], [N_post]]
+c2 = [[N_post], [N_post_2]]
+
+connections = [c1, c2]
+make_pre_post_connections(connections)
+
+full_neuron_list = [N_ex, N_inh, N_post, N_post_2]
+firing_neurons = [N_ex, N_inh]
+
+
+#
+initiate_APs_in_network(firing_neurons, [1,1], full_neuron_list)
+
+print(N_post.voltage())
+N_post.display_queues()
+
+print('\n')
+print(N_post_2.voltage())
+N_post_2.display_queues()
+#
+
+
+#Main test
+
+for i in range(n_tests):
+    initiate_APs_in_network(firing_neurons, reaction_times[i], full_neuron_list)
+
+fig, ax = plt.subplots(1,2)
+
+ax[0].plot(N_post.voltage_history)
+ax[0].plot(N_post.vth * np.ones(n_tests))
+
+ax[1].plot(N_post_2.voltage_history)
+ax[1].plot(N_post_2.vth * np.ones(n_tests))
+plt.show()
 
 
