@@ -427,7 +427,7 @@ def generate_test_neurons(n, n_args_ex):
     return neuron_dict
 
 
-def update_network(firing_neurons, events):
+def update_network(firing_neurons, full_neuron_list, events):
     """
     Firing_neurons is a list of neurons, events is a list of 0's and 1's.
     If the i-th event is a 1, fire firing_neurons[i], otherwise do nothing.
@@ -469,19 +469,21 @@ def update_network(firing_neurons, events):
         #Add all the post neurons to the set of neurons that received APs
         for post_neuron_name in FN.post().keys():
             neurons_that_received_APs.add(post_neuron_name)
+            
 
         #Add all post neurons that are over their thresholds to a set
         for post_neuron_name in FN.post().keys():
 
             post_neuron = FN.post()[post_neuron_name]
             if post_neuron.voltage() >= post_neuron.vth:
-                new_firing_neurons.add(FN.post()[post_neuron_name])
-          
+                new_firing_neurons.add(post_neuron_name)
+
+    new_firing_neurons = set([neuron for neuron in full_neuron_list if (neuron.name in new_firing_neurons)])
     if new_firing_neurons != set():
         new_firing_neurons = list(new_firing_neurons)
         new_events = np.ones(len(new_firing_neurons))
 
-        update_network(new_firing_neurons, new_events) #Recursive step.
+        update_network(new_firing_neurons, full_neuron_list, new_events) #Recursive step.
         for neuron in new_firing_neurons:
             neuron.fired_AP_check()
 
@@ -528,7 +530,7 @@ def initiate_APs_in_network(firing_neurons, event, full_neuron_list):
         exception_str = 'Firing neuron list and events are not same length.'
         raise Exception(exception_str)
     
-    update_network(firing_neurons, event)
+    update_network(firing_neurons, full_neuron_list, event)
     continue_no_AP_neurons(full_neuron_list)
  
 def merge_dicts(*args):
@@ -947,7 +949,7 @@ reaction_times = generate_AP_times(p_array, n_tests)
 n_args_test = get_dict(name = 'ex_1', n_type = 'ex', M = 10, E = 5, k = 1,
                        pr = 0.5, f = 1, v0 = 0,
                        vth = 3, tv = 10, kv = 0.01, v = 0, refractory_period = 3,
-                       AP_length = 10, A= 1.1, tau = 10, other = None)
+                       AP_length = 10, A= 1.4, tau = 10, other = None)
 
 #8 test neurons, modeled after n_args_ex
 n_test_neurons = 6
@@ -959,7 +961,7 @@ c2 = [tn[2], tn[3]]
 c3 = [tn[3], tn[4]]
 c4 = [tn[4], tn[5]]
 c5 = [tn[6], tn[5]]
-c_fb = [tn[5], tn[2]]
+c_fb = [tn[5], tn[4]]
 
 connection_list = [c1, c2, c3, c4,  c5, c_fb]
 
@@ -991,4 +993,77 @@ tn[3].display_queues()
 ##    print('-----\nReaction({}):{}\n '.format(i,reaction_times[i]),
 ##          tn[3].voltage(), tn[4].voltage(), tn[5].voltage(), '\n ',
 ##          tn[6].voltage(), tn[7].voltage(), '\n  ', tn[8].voltage())
+
+###############################################################################
+###############################################################################                
+###############################################################################
+#
+#                                Feedback Test 3
+#
+###############################################################################
+###############################################################################
+###############################################################################
+
+p_array = [0.5, 0.2] 
+n_tests = 1000
+
+#a[i] is the i-th instance of time
+reaction_times = generate_AP_times(p_array, n_tests) 
+
+n_args_test = get_dict(name = 'ex_1', n_type = 'ex', M = 10, E = 5, k = 1,
+                       pr = 0.5, f = 1, v0 = 0,
+                       vth = 3, tv = 10, kv = 0.01, v = 0, refractory_period = 3,
+                       AP_length = 10, A= 1, tau = 10, other = None)
+
+#8 test neurons, modeled after n_args_ex
+n_test_neurons = 8
+tn = generate_test_neurons(n_test_neurons, n_args_test) 
+full_neuron_list = [tn[i] for i in range(1,n_test_neurons+1)]
+
+c1 = [tn[1], tn[3]]
+c2 = [tn[2], tn[4]]
+c3 = [[tn[3], tn[4]], tn[5]]
+c4 = [tn[5], tn[6]]
+c5 = [tn[6], tn[7]]
+c6 = [tn[8], tn[7]]
+c_fb = [tn[7], [tn[5], tn[3]]]
+
+
+connection_list = [c1, c2, c3, c4,  c5, c6, c_fb]
+
+make_pre_post_connections(connection_list)
+
+firing_neurons = [tn[1], tn[2], tn[8]]
+
+#THIS IS BETTER, BUT I NEED TO NOW CODE THIS SO THAT THE UPDATES WILL
+#DISPLAY VOLTAGES WHEN ACTION POTENTIALS HIT.
+#Maybe I need to update the preneuron_voltage_contribution in the
+#AP or the big function since it just deals with v and not the queues.
+
+initiate_APs_in_network(firing_neurons, [1, 1, 1], full_neuron_list)
+
+##for neuron in full_neuron_list:
+##    print(neuron.name, neuron.voltage())
+
+print('', tn[3].name, tn[3].voltage(), '  ', tn[4].voltage(), tn[4].name,
+      '\n', tn[5].name, ' ', tn[5].voltage(),
+      '\n', tn[6].name, ' ',tn[6].voltage(), '\n', tn[7].name,' ',
+      tn[7].voltage(), '\n')
+tn[5].display_queues()
+tn[6].display_queues()
+
+for neuron in full_neuron_list:
+    print('', neuron.name, neuron.voltage())
+
+
+
+
+##for i in range(20):
+##    update_network(firing_neurons, reaction_times[i])
+##    continue_no_AP_neurons(full_neuron_list)
+##    print('-----\nReaction({}):{}\n '.format(i,reaction_times[i]),
+##          tn[3].voltage(), tn[4].voltage(), tn[5].voltage(), '\n ',
+##          tn[6].voltage(), tn[7].voltage(), '\n  ', tn[8].voltage())
+
+
 
