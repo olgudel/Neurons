@@ -372,7 +372,8 @@ def make_pre_post_connections(connection_list):
                 post_n = connection_list[i][1][j]
                 pre_n.add_post(post_n)
                 post_n.add_pre(pre_n)
-            
+
+
 
 def generate_AP_times(p_array, n_tests):
     """
@@ -526,6 +527,29 @@ def merge_dicts(*args):
     for arg in args:
         my_dict.update(arg)
     return my_dict
+
+def generate_poisson_times(AP_rate):
+    #Generates AP times at 200-300 per second, returns times in milliseconds
+    AP_rate = np.random.randint(200, 301)
+    AP_times = np.cumsum(np.random.exponential( 1./AP_rate, size = int(AP_rate)))
+    AP_times = np.around(AP_times,3)
+    return AP_times
+
+
+def generate_AP_times_2(p_array, n_tests):
+    times_list = []
+    for p in p_array:
+        times = np.random.choice([0,1],
+                                 size = (n_tests),
+                                 p = [1-p, p])
+        times_list.append(times)
+
+    return np.array(times_list).T
+
+a = generate_AP_times_2(p_array, n_tests)
+        
+    
+
 
 ###############################################################################
 ###############################################################################                
@@ -983,11 +1007,12 @@ for neuron in full_neuron_list:
 ###############################################################################
 
 
-n_tests = 100
+n_tests = 1000
 
-p_array = [0.5, 0.3]
+p_array = [0.8, 0.6]
 
 reaction_times = generate_AP_times(p_array, n_tests)
+
 
 template_names = ['name', 'n_type', 'M', 'E', 'k',
                   'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'v',
@@ -998,20 +1023,20 @@ template_args = make_template(template_names)
 
 N_ex_dict = get_dict(name = 'N_ex', n_type = 'ex', M = 100, E = 50, k = 1,
                        pr = 0.6, f = 1, v0 = 0,
-                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
-                     refractory_period = 3, A= 1, tau = 20, other = None)
+                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 100,
+                     refractory_period = 3, A= 0.05, tau = 20, other = None)
 N_inh_dict = get_dict(name = 'N_inh', n_type = 'inh_v', M = 45, E = 15, k = 1,
                        pr = 0.3, f = 1, v0 = 0,
-                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
-                     refractory_period = 3, A= -0.5, tau = 10, other = None)
+                       vth = 3, tv = 10, kv = 0.05, v = 0, AP_length = 50,
+                     refractory_period = 3, A= -0.01, tau = 20, other = None)
 N_post_dict = get_dict(name = 'N_post', n_type = 'ex', M = 45, E = 15, k = 1,
                        pr = 0.3, f = 1, v0 = 0,
-                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
-                     refractory_period = 3, A= 1, tau = 10, other = None)
+                       vth = 0.2, tv = 10, kv = 0.01, v = 0, AP_length = 100,
+                     refractory_period = 3, A= 1.25, tau = 10, other = None)
 
 N_post_dict_2 = get_dict(name = 'N_post_2', n_type = 'ex', M = 45, E = 15, k = 1,
                        pr = 0.3, f = 1, v0 = 0,
-                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 10,
+                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 100,
                      refractory_period = 3, A= 1, tau = 10, other = None)
 
 args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
@@ -1052,13 +1077,40 @@ firing_neurons = [N_ex, N_inh]
 for i in range(n_tests):
     initiate_APs_in_network(firing_neurons, reaction_times[i], full_neuron_list)
 
-fig, ax = plt.subplots(1,2)
+fig, ax = plt.subplots(2,1)
 
 ax[0].plot(N_post.voltage_history)
 ax[0].plot(N_post.vth * np.ones(n_tests))
+ax[0].set_title('N_post voltage history')
+ax[0].set_ylabel('Voltage')
+ax[0].set_xticklabels([])
 
 ax[1].plot(N_post_2.voltage_history)
 ax[1].plot(N_post_2.vth * np.ones(n_tests))
+ax[1].set_title('N_post_2 voltage history')
+ax[1].set_xlabel('Time Instance')
+ax[1].set_ylabel('Voltage')
 plt.show()
 
 
+def get_T_star(post_neuron):
+    T_star = []
+    time = 0
+    v0 = 0
+    v_max = 0
+    stop_count = False
+    v_hist = post_neuron.voltage_history
+    for i,v in enumerate(v_hist):
+        if i == 0:
+            continue
+        if v_hist[i] >= v_hist[i-1]:
+            v_max = v
+            if stop_count == False:
+                time += 1
+        else:
+            stop_count = True
+            v_max = v
+        
+        
+    
+    
