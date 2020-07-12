@@ -1,3 +1,17 @@
+#Notes
+
+#Plot number of released vesicles, number of docked vesicles
+#Plot all variabls in detail.  Empty vs filled, number of new vesicles,
+#number of released vesicles
+
+#Change the strengts of two inputs and see
+#how the distribution of T_star changes. Activ. and no inh. Activ and some inh.
+#More inh than act.  See how statistical properties of T_star change mean std.
+
+#Change the frequency plot all variables.  Benchmarking code against Zahra's.
+
+#Gillespi to choose next reaction: np.random.choice([reactions], 1, p = [pr1, ...])
+
 ###############################################################################
 ###############################################################################                
 ###############################################################################
@@ -38,7 +52,6 @@ class Neuron:
     vth (float)
     tv (float)
     kv (float)
-    v (float)
     other (dictionary: key/values "pr":(percentage), "f":(percentage), "tv":(float), "kv":(float))
 
 
@@ -47,7 +60,7 @@ class Neuron:
         self.name, self.n_type, self.M, self.E, self.k,
         self.pr, self.f, self.v0, 
         self.vth, self.tv, self.kv, 
-        self.v, self.AP_length, self, refractory_period,
+        self.AP_length, self, refractory_period,
         self.A, self.tau, self.other
     
     """
@@ -61,12 +74,15 @@ class Neuron:
 ##        self.name, self.n_type, self.M, self.E, self.k,
 ##        self.pr, self.f, self.v0, 
 ##        self.vth, self.tv, self.kv, 
-##        self.v, self.AP_length, self, refractory_period,
+##        self.AP_length, self, refractory_period,
 ##        self.A, self.tau, self.other
 ##        
 
         self.n_tests = n_tests
 
+
+        
+        
         #
         self.refractory_period_counter = 0
         #Incase the neuron is inhibited with effects, keep a copy of the original values
@@ -88,6 +104,9 @@ class Neuron:
         
 #
 
+        self.counting_neuron = False
+        self.T_star_count = []
+
         #Marker for when the neuron receives an AP within the refractory period.
         self.initializing_AP_neuron = False
         
@@ -105,6 +124,11 @@ class Neuron:
         self.queue_size = self.AP_length
         self.voltage_queue = Queue(self.queue_size)
         self.voltage_history = []
+
+
+        #Vesicle history
+        self.E_history = [self.E]
+        self.b_history = [0]
 
 
 #
@@ -183,9 +207,39 @@ class Neuron:
         def update_voltage_contributions(post_neuron):
             #pc stands for post connection aka the post neuron
             
+
+################################################################################
+
+###Original function for display purposes.
+##            def AP_function():
+##                return self.A * np.exp(-np.arange(self.AP_length)/self.tau)
+
+
             def AP_function():
-                return self.A * np.exp(-np.arange(self.AP_length)/self.tau)
                 #THIS IS THE FUNCTION THAT I NEED TO MODIFY WITH ZAHRA'S CODE
+            
+
+
+                
+                self.b = np.random.binomial(self.M - self.E, self.pr)
+                self.b_history.append(self.b)
+                
+                #This step is further in the code, reset or history function
+                #Maybe add a marker
+                self.E += self.b
+                self.E_history.append(self.E)
+                rnum = np.random.uniform(0,1)
+                if rnum >= 0.8:
+                    refilled_vesicles = np.random.randint(1, self.E+1)
+                    self.E_history[-1] -= refilled_vesicles
+                    self.E -= refilled_vesicles
+                
+                new_voltage_shape = self.A * self.kv * self.b * \
+                            np.exp(-np.arange(self.AP_length)/self.tau)
+                return new_voltage_shape
+
+################################################################################
+
 
             #Rotate the voltage queues
             #Update the values with an action potential
@@ -515,12 +569,18 @@ def initiate_APs_in_network(firing_neurons, event, full_neuron_list):
     
     update_network(firing_neurons, full_neuron_list, event)
     continue_no_AP_neurons(full_neuron_list)
+
+    #Update the histories
     
     for neuron in set(full_neuron_list) - set(firing_neurons):
         if neuron.fired_an_AP == False:
             neuron.voltage_history.append(neuron.voltage())
+            if neuron.counting_neuron == True:
+                neuron.T_star_count.append(0)
         else:
             neuron.voltage_history.append(neuron.vth)
+            if neuron.counting_neuron == True:
+                neuron.T_star_count.append(1)
  
 def merge_dicts(*args):
     my_dict = {}
@@ -544,12 +604,47 @@ def generate_AP_times_2(p_array, n_tests):
                                  p = [1-p, p])
         times_list.append(times)
 
-    return np.array(times_list).T
-
-a = generate_AP_times_2(p_array, n_tests)
-        
+    return np.array(times_list).T        
     
+def get_T_star(T_star_list):
+    """
+    Takes a T_star_list, which is a list of 0's and 1's, and counts the
+    number of 0's until a 1 occurs.  Returns the total number of counts
+    between each 1 occurance.
+    """
 
+    T_star = []
+    counter = 0
+    for i in range(len(T_star_list)):
+        if T_star_list[i] == 0:
+            counter += 1
+        else:
+            counter += 1
+            T_star.append(counter)
+            counter = 0
+    return T_star
+
+def neuron_dict(**my_dict):
+    """
+
+    A dictionary of arguments that modify a template neuron dictionary.
+    Raises an exception if you include a key that isn't in the
+    template dictionary.  Used for quickly changing neuron parameters.
+    
+    """
+    template_dict = get_dict(name = 'template', n_type = 'ex', M = 10, E = 5,
+                        k = 1, pr = 0.5, f = 1, v0 = 0,
+                       vth = 0.2, tv = 10, kv = 0.01, AP_length = 100,
+                     refractory_period = 3, A= 1, tau = 10, other = None)
+    for name in my_dict.keys():
+        if name not in template_dict.keys():
+            raise Exception('Incorrect dictionary key: {}'.format(name))
+
+    for name in my_dict.keys():
+        template_dict[name] = my_dict[name]
+        
+    return template_dict
+    
 
 ###############################################################################
 ###############################################################################                
@@ -1007,37 +1102,31 @@ for neuron in full_neuron_list:
 ###############################################################################
 
 
-n_tests = 1000
+n_tests = 5000
 
-p_array = [0.8, 0.6]
+p_array = [0.4, 0.05]
 
 reaction_times = generate_AP_times(p_array, n_tests)
 
 
 template_names = ['name', 'n_type', 'M', 'E', 'k',
-                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'v',
+                  'pr', 'f', 'v0', 'vth', 'tv', 'kv',
                   'AP_length','refractory_period', 'A','tau', 'other']
 template_args = make_template(template_names)
 
 
 
-N_ex_dict = get_dict(name = 'N_ex', n_type = 'ex', M = 100, E = 50, k = 1,
-                       pr = 0.6, f = 1, v0 = 0,
-                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 100,
-                     refractory_period = 3, A= 0.05, tau = 20, other = None)
-N_inh_dict = get_dict(name = 'N_inh', n_type = 'inh_v', M = 45, E = 15, k = 1,
-                       pr = 0.3, f = 1, v0 = 0,
-                       vth = 3, tv = 10, kv = 0.05, v = 0, AP_length = 50,
-                     refractory_period = 3, A= -0.01, tau = 20, other = None)
-N_post_dict = get_dict(name = 'N_post', n_type = 'ex', M = 45, E = 15, k = 1,
-                       pr = 0.3, f = 1, v0 = 0,
-                       vth = 0.2, tv = 10, kv = 0.01, v = 0, AP_length = 100,
-                     refractory_period = 3, A= 1.25, tau = 10, other = None)
 
-N_post_dict_2 = get_dict(name = 'N_post_2', n_type = 'ex', M = 45, E = 15, k = 1,
-                       pr = 0.3, f = 1, v0 = 0,
-                       vth = 3, tv = 10, kv = 0.01, v = 0, AP_length = 100,
-                     refractory_period = 3, A= 1, tau = 10, other = None)
+
+N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5, pr = 0.6,
+                        kv = 0.02)
+N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v',M = 10, E = 5, pr = 0.3,
+                         A = -1)
+N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
+                          kv = 0.05)
+N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
+                            pr = 0.3)
+
 
 args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
 neuron_args_check(args_dict_list, template_args)
@@ -1046,6 +1135,8 @@ N_ex = Neuron(N_ex_dict, n_tests)
 N_inh = Neuron(N_inh_dict, n_tests)
 N_post = Neuron(N_post_dict, n_tests)
 N_post_2 = Neuron(N_post_dict_2, n_tests)
+
+N_post.counting_neuron = True
 
 c1 = [[N_ex, N_inh], [N_post]]
 c2 = [[N_post], [N_post_2]]
@@ -1077,6 +1168,8 @@ firing_neurons = [N_ex, N_inh]
 for i in range(n_tests):
     initiate_APs_in_network(firing_neurons, reaction_times[i], full_neuron_list)
 
+#Plot the graphs
+
 fig, ax = plt.subplots(2,1)
 
 ax[0].plot(N_post.voltage_history)
@@ -1093,24 +1186,19 @@ ax[1].set_ylabel('Voltage')
 plt.show()
 
 
-def get_T_star(post_neuron):
-    T_star = []
-    time = 0
-    v0 = 0
-    v_max = 0
-    stop_count = False
-    v_hist = post_neuron.voltage_history
-    for i,v in enumerate(v_hist):
-        if i == 0:
-            continue
-        if v_hist[i] >= v_hist[i-1]:
-            v_max = v
-            if stop_count == False:
-                time += 1
-        else:
-            stop_count = True
-            v_max = v
-        
-        
-    
+#T_star plot
+
+T_star = get_T_star(N_post.T_star_count)
+plt.plot(T_star, label = 'T_star')
+plt.plot(np.mean(T_star) * np.ones(len(T_star)), label = 'T_star mean = {}'.format(np.around(np.mean(T_star)), 3))
+plt.legend()
+plt.show()
+
+plt.plot(N_ex.E_history, label = 'E')
+plt.plot(N_ex.b_history, label = 'b')
+plt.legend()
+plt.show()
+
+
+
     
