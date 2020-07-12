@@ -230,7 +230,7 @@ class Neuron:
                 self.E_history.append(self.E)
                 rnum = np.random.uniform(0,1)
                 if rnum >= 0.8:
-                    refilled_vesicles = np.random.randint(1, self.E+1)
+                    refilled_vesicles = np.random.randint(1, self.E+2)
                     self.E_history[-1] -= refilled_vesicles
                     self.E -= refilled_vesicles
                 
@@ -1102,9 +1102,10 @@ for neuron in full_neuron_list:
 ###############################################################################
 
 
-n_tests = 5000
+#n_tests = 1000 means 1000 ms which is 1 second, 100000 means us
+n_tests = 1000
 
-p_array = [0.4, 0.05]
+p_array = [0.6, 0.1]
 
 reaction_times = generate_AP_times(p_array, n_tests)
 
@@ -1122,8 +1123,7 @@ N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5, pr = 0.6,
                         kv = 0.02)
 N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v',M = 10, E = 5, pr = 0.3,
                          A = -1)
-N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
-                          kv = 0.05)
+N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3)
 N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
                             pr = 0.3)
 
@@ -1189,13 +1189,23 @@ plt.show()
 #T_star plot
 
 T_star = get_T_star(N_post.T_star_count)
+plt.title('T_star plot')
 plt.plot(T_star, label = 'T_star')
+plt.xlabel('AP instance')
+plt.ylabel('Time (ms)')
 plt.plot(np.mean(T_star) * np.ones(len(T_star)), label = 'T_star mean = {}'.format(np.around(np.mean(T_star)), 3))
 plt.legend()
 plt.show()
 
-plt.plot(N_ex.E_history, label = 'E')
-plt.plot(N_ex.b_history, label = 'b')
+#Vesicle plot
+fig, ax = plt.subplots(2,1)
+ax[0].set_title('Vesicle release ')
+ax[0].plot(N_ex.E_history, label = 'E', c='r')
+ax[0].set_xticklabels([])
+ax[0].plot(np.zeros(len(N_ex.E_history)))
+ax[1].set_title('Vesicle Empty')
+ax[1].plot(N_ex.b_history, label = 'b')
+ax[1].plot(np.zeros(len(N_ex.b_history)))
 plt.legend()
 plt.show()
 
