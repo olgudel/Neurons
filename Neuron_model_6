@@ -1103,7 +1103,7 @@ for neuron in full_neuron_list:
 
 
 #n_tests = 1000 means 1000 ms which is 1 second, 100000 means us
-n_tests = 1000
+n_tests = 500
 
 p_array = [0.6, 0.1]
 
@@ -1114,9 +1114,6 @@ template_names = ['name', 'n_type', 'M', 'E', 'k',
                   'pr', 'f', 'v0', 'vth', 'tv', 'kv',
                   'AP_length','refractory_period', 'A','tau', 'other']
 template_args = make_template(template_names)
-
-
-
 
 
 N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5, pr = 0.6,
@@ -1168,7 +1165,45 @@ firing_neurons = [N_ex, N_inh]
 for i in range(n_tests):
     initiate_APs_in_network(firing_neurons, reaction_times[i], full_neuron_list)
 
-#Plot the graphs
+#Plot the firing times of the firing neurons.
+
+
+##fire_times_ex = reaction_times[:, 0]
+##fire_times_inh = reaction_times[:,1]
+##
+##f_times = [i for i,v in enumerate(fire_times_ex) if (v ==1)]
+
+fig, ax = plt.subplots(2,1)
+
+fig.suptitle('Firing Times (In {} second)'.format(n_tests/1000))
+
+ex_times = [i for i,v in enumerate(reaction_times[:,0]) if (v==1)]
+inh_times = [i for i,v in enumerate(reaction_times[:,1]) if (v==1)]
+
+ax[0].set_title('N_ex')
+ax[0].set_xticklabels([])
+ax[0].set_yticklabels({})
+ax[0].vlines(ex_times, ymin = 0, ymax = 1,
+             label = 'ex: {}'.format(np.sum(reaction_times[:, 0])))
+ax[0].plot([3]) #Raise the graph up a litte
+ax[0].legend()
+
+
+ax[1].set_title('N_inh')
+ax[1].set_xlabel('Time Instance (ms)')
+ax[1].set_yticklabels([])
+ax[1].vlines(inh_times, ymin = 0, ymax = 1,
+             label = 'ex: {}'.format(np.sum(reaction_times[:, 1])))
+ax[1].plot([3])
+ax[1].legend()
+
+plt.legend()
+plt.show()
+
+
+
+
+#Plot the post neuron graphs
 
 fig, ax = plt.subplots(2,1)
 
@@ -1181,7 +1216,7 @@ ax[0].set_xticklabels([])
 ax[1].plot(N_post_2.voltage_history)
 ax[1].plot(N_post_2.vth * np.ones(n_tests))
 ax[1].set_title('N_post_2 voltage history')
-ax[1].set_xlabel('Time Instance')
+ax[1].set_xlabel('Time Instance (ms)')
 ax[1].set_ylabel('Voltage')
 plt.show()
 
