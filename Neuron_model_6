@@ -13,7 +13,7 @@
 #Gillespi to choose next reaction: np.random.choice([reactions], 1, p = [pr1, ...])
 
 ###############################################################################
-###############################################################################                
+#########################+######################################################                
 ###############################################################################
 #
 #                              Libraries
@@ -81,8 +81,8 @@ class Neuron:
         self.n_tests = n_tests
 
 
-        # AP prob function
-        self.AP_prob_function = None
+##        # AP prob function
+##        self.AP_prob_function = None
         
         #
         self.refractory_period_counter = 0
@@ -537,7 +537,10 @@ def update_network(firing_neurons, full_neuron_list, events):
             post_neuron = FN.post()[post_neuron_name]
 
             #NEED A SIGMOIDAL FUNCTION FOR THE AP_PROB_FUNCTION
-            #if post_neuron.AP_prob_function(post_neuron.voltage()) == True:
+            #firing_probability = post_neuron.AP_prob_function(post_neuron.voltage())
+            #firing_decision = np.random.choice([0,1], 1, p = [1- firing_probability, firing_probability])
+            #if firing_decision[0] == 1:
+            #   FIRE THE NEURON OR DO SOMETHING
             if post_neuron.voltage() >= post_neuron.vth:
                 new_firing_neurons.add(post_neuron_name)
 
@@ -661,15 +664,18 @@ def get_T_star(T_star_list):
             counter = 0
     return T_star
 
-def sigmoid(x):
+def sigmoid(x, y1=-5, y2=20, x1=0, x2=0.2):
     #MODIFY SIGMOIDAL FUNCTION
+    m = (y2-y1) / (x2-x1)
+    y = m*x - y2
+    return 1/ (1 +np.exp(-y))
 
-    f02 = 0.9999
-    f0 = 0.01
 
-    C = (f0 - f02) / (f02 * np.exp(-0.2) - f0)
-    A = f02 + f02 *C * np.exp(-0.2)
-    return A / (1 + C*np.exp(-x))
+##a = np.linspace(0, 0.2, 1000)
+##
+##plt.plot(a,sigmoid(a))
+##plt.show()
+
 
 def neuron_dict(**my_dict):
     """
@@ -1167,154 +1173,7 @@ for neuron in full_neuron_list:
 ##          tn[6].voltage(), tn[7].voltage(), '\n  ', tn[8].voltage())
 
 
-###############################################################################
-###############################################################################                
-###############################################################################
-#
-#                                Final Test
-#
-###############################################################################
-###############################################################################
-###############################################################################
 
-
-#n_tests = 1000 means 1000 ms which is 1 second, 100000 means us
-n_tests = 1000
-
-p_array = [0.4, 0.2]
-
-reaction_times = generate_AP_times(p_array, n_tests)
-
-
-template_names = ['name', 'n_type', 'M', 'E', 'k',
-                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'AP_per_second',
-                  'AP_length','refractory_period', 'A','tau','AP_prob_function',
-                  'other']
-template_args = make_template(template_names)
-
-
-N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5, pr = 0.6,
-                        kv = 0.02)
-N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v',M = 10, E = 5, pr = 0.3,
-                         A = -1)
-N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
-                          kv = 0.02)
-N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
-                            pr = 0.3)
-
-
-args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
-neuron_args_check(args_dict_list, template_args)
-
-N_ex = Neuron(N_ex_dict, n_tests)
-N_inh = Neuron(N_inh_dict, n_tests)
-N_post = Neuron(N_post_dict, n_tests)
-N_post_2 = Neuron(N_post_dict_2, n_tests)
-
-#Because we want to measure T_star for N_post
-N_post.counting_neuron = True
-
-c1 = [[N_ex, N_inh], [N_post]]
-c2 = [[N_post], [N_post_2]]
-
-connections = [c1, c2]
-make_pre_post_connections(connections)
-
-full_neuron_list = [N_ex, N_inh, N_post, N_post_2]
-firing_neurons = [N_ex, N_inh]
-firing_times = generate_AP_times_and_reactions(firing_neurons)
-
-
-###Individal AP firing test
-
-##initiate_APs_in_network(firing_neurons, [1,1], full_neuron_list)
-##
-##print(N_post.voltage())
-##print(N_post.fired_an_AP)
-##print(N_post.refractory_period_counter)
-##N_post.display_queues()
-##
-##print('\n')
-##print(N_post_2.voltage())
-##N_post_2.display_queues()
-#
-
-
-#Main test
-
-for i in range(n_tests):
-    initiate_APs_in_network(firing_neurons, reaction_times[i], full_neuron_list)
-
-#Plot the firing times of the firing neurons.
-
-fig, ax = plt.subplots(2,1)
-
-fig.suptitle('Firing Times (In {} second(s))'.format(n_tests/1000))
-
-ex_times = [i for i,v in enumerate(reaction_times[:,0]) if (v==1)]
-inh_times = [i for i,v in enumerate(reaction_times[:,1]) if (v==1)]
-
-ax[0].set_title('N_ex')
-#ax[0].set_xticklabels([])
-ax[0].set_yticklabels({})
-ax[0].vlines(ex_times, ymin = 0, ymax = 1,
-             label = 'Number of ex =  {}'.format(np.sum(reaction_times[:, 0])))
-ax[0].plot([3]) #Raise the graph up a litte
-ax[0].legend()
-
-
-ax[1].set_title('N_inh')
-ax[1].set_xlabel('Time Instance (ms)')
-ax[1].set_yticklabels([])
-ax[1].vlines(inh_times, ymin = 0, ymax = 1,
-             label = 'Number of inh = {}'.format(np.sum(reaction_times[:, 1])))
-ax[1].plot([3])
-ax[1].legend()
-
-plt.legend()
-plt.show()
-
-#Plot the post neuron graphs
-
-fig, ax = plt.subplots(2,1)
-
-ax[0].plot(N_post.voltage_history)
-ax[0].plot(N_post.vth * np.ones(n_tests))
-ax[0].set_title('N_post voltage history')
-ax[0].set_ylabel('Voltage')
-ax[0].set_xticklabels([])
-
-ax[1].plot(N_post_2.voltage_history)
-ax[1].plot(N_post_2.vth * np.ones(n_tests))
-ax[1].set_title('N_post_2 voltage history')
-ax[1].set_xlabel('Time Instance (ms)')
-ax[1].set_ylabel('Voltage')
-plt.show()
-
-
-#T_star plot
-
-T_star = get_T_star(N_post.T_star_count)
-plt.title('T_star plot')
-plt.plot(T_star, label = 'T_star')
-plt.xlabel('AP instance')
-plt.ylabel('Time (ms)')
-plt.plot(np.mean(T_star) * np.ones(len(T_star)),
-         label = 'T_star mean = {}'.format(np.around(np.mean(T_star)), 3))
-plt.legend()
-plt.show()
-
-#Vesicle plot
-fig, ax = plt.subplots(2,1)
-ax[0].set_title('Vesicle release ')
-ax[0].plot(N_ex.E_history, label = 'E', c='r')
-ax[0].set_xticklabels([])
-ax[0].plot(np.zeros(len(N_ex.E_history)))
-ax[1].set_title('Vesicle Empty')
-ax[1].plot(N_ex.b_history, label = 'b')
-ax[1].plot(np.zeros(len(N_ex.b_history)))
-plt.legend()
-plt.show()
 
 
 ###############################################################################
@@ -1473,3 +1332,153 @@ ax[1].plot(np.zeros(len(N_ex.b_history)))
 plt.legend()
 plt.show()
 
+
+
+###############################################################################
+###############################################################################                
+###############################################################################
+#
+#                                Final Test
+#
+###############################################################################
+###############################################################################
+###############################################################################
+
+
+#n_tests = 1000 means 1000 ms which is 1 second, 100000 means us
+n_tests = 1000
+
+p_array = [0.4, 0.2]
+
+reaction_times = generate_AP_times(p_array, n_tests)
+
+
+template_names = ['name', 'n_type', 'M', 'E', 'k',
+                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'AP_per_second',
+                  'AP_length','refractory_period', 'A','tau','AP_prob_function',
+                  'other']
+template_args = make_template(template_names)
+
+
+N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5, pr = 0.6,
+                        kv = 0.02, AP_prob_function = sigmoid)
+N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v',M = 10, E = 5, pr = 0.3,
+                         A = -1, AP_prob_function = sigmoid)
+N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
+                          kv = 0.02, AP_prob_function = sigmoid)
+N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
+                            pr = 0.3, AP_prob_function = sigmoid)
+
+
+args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
+neuron_args_check(args_dict_list, template_args)
+
+N_ex = Neuron(N_ex_dict, n_tests)
+N_inh = Neuron(N_inh_dict, n_tests)
+N_post = Neuron(N_post_dict, n_tests)
+N_post_2 = Neuron(N_post_dict_2, n_tests)
+
+#Because we want to measure T_star for N_post
+N_post.counting_neuron = True
+
+c1 = [[N_ex, N_inh], [N_post]]
+c2 = [[N_post], [N_post_2]]
+
+connections = [c1, c2]
+make_pre_post_connections(connections)
+
+full_neuron_list = [N_ex, N_inh, N_post, N_post_2]
+firing_neurons = [N_ex, N_inh]
+firing_times = generate_AP_times_and_reactions(firing_neurons)
+
+
+###Individal AP firing test
+
+##initiate_APs_in_network(firing_neurons, [1,1], full_neuron_list)
+##
+##print(N_post.voltage())
+##print(N_post.fired_an_AP)
+##print(N_post.refractory_period_counter)
+##N_post.display_queues()
+##
+##print('\n')
+##print(N_post_2.voltage())
+##N_post_2.display_queues()
+#
+
+
+#Main test
+
+for i in range(n_tests):
+    initiate_APs_in_network(firing_neurons, reaction_times[i], full_neuron_list)
+
+#Plot the firing times of the firing neurons.
+
+fig, ax = plt.subplots(2,1)
+
+fig.suptitle('Firing Times (In {} second(s))'.format(n_tests/1000))
+
+ex_times = [i for i,v in enumerate(reaction_times[:,0]) if (v==1)]
+inh_times = [i for i,v in enumerate(reaction_times[:,1]) if (v==1)]
+
+ax[0].set_title('N_ex')
+#ax[0].set_xticklabels([])
+ax[0].set_yticklabels({})
+ax[0].vlines(ex_times, ymin = 0, ymax = 1,
+             label = 'Number of ex =  {}'.format(np.sum(reaction_times[:, 0])))
+ax[0].plot([3]) #Raise the graph up a litte
+ax[0].legend()
+
+
+ax[1].set_title('N_inh')
+ax[1].set_xlabel('Time Instance (ms)')
+ax[1].set_yticklabels([])
+ax[1].vlines(inh_times, ymin = 0, ymax = 1,
+             label = 'Number of inh = {}'.format(np.sum(reaction_times[:, 1])))
+ax[1].plot([3])
+ax[1].legend()
+
+plt.legend()
+plt.show()
+
+#Plot the post neuron graphs
+
+fig, ax = plt.subplots(2,1)
+
+ax[0].plot(N_post.voltage_history)
+ax[0].plot(N_post.vth * np.ones(n_tests))
+ax[0].set_title('N_post voltage history')
+ax[0].set_ylabel('Voltage')
+ax[0].set_xticklabels([])
+
+ax[1].plot(N_post_2.voltage_history)
+ax[1].plot(N_post_2.vth * np.ones(n_tests))
+ax[1].set_title('N_post_2 voltage history')
+ax[1].set_xlabel('Time Instance (ms)')
+ax[1].set_ylabel('Voltage')
+plt.show()
+
+
+#T_star plot
+
+T_star = get_T_star(N_post.T_star_count)
+plt.title('T_star plot')
+plt.plot(T_star, label = 'T_star')
+plt.xlabel('AP instance')
+plt.ylabel('Time (ms)')
+plt.plot(np.mean(T_star) * np.ones(len(T_star)),
+         label = 'T_star mean = {}'.format(np.around(np.mean(T_star)), 3))
+plt.legend()
+plt.show()
+
+#Vesicle plot
+fig, ax = plt.subplots(2,1)
+ax[0].set_title('Vesicle release ')
+ax[0].plot(N_ex.E_history, label = 'E', c='r')
+ax[0].set_xticklabels([])
+ax[0].plot(np.zeros(len(N_ex.E_history)))
+ax[1].set_title('Vesicle Empty')
+ax[1].plot(N_ex.b_history, label = 'b')
+ax[1].plot(np.zeros(len(N_ex.b_history)))
+plt.legend()
+plt.show()
