@@ -710,6 +710,8 @@ def generate_AP_times_and_reactions(firing_neurons):
     total_firings = np.sum(APs_per_second_list)
     poisson_times = set(generate_poisson_times(total_firings))
 
+    
+
 
     AP_times_list = []
     for AP_num in APs_per_second_list:
@@ -722,7 +724,7 @@ def generate_AP_times_and_reactions(firing_neurons):
         mins_list = [min(AP_times_list[i]) for i in range(len(AP_times_list)) if (len(AP_times_list[i]) > 0)]
         min_time = min(mins_list)
         argmin = int(np.argmin(mins_list))
-        final_times.append([min_time, argmin])
+        final_times.append([min_time, firing_neurons[argmin].name])
         AP_times_list[argmin] -= set([min_time])
 
     return final_times
@@ -1482,3 +1484,81 @@ ax[1].plot(N_ex.b_history, label = 'b')
 ax[1].plot(np.zeros(len(N_ex.b_history)))
 plt.legend()
 plt.show()
+
+###############################################################################
+###############################################################################                
+###############################################################################
+#
+#                                New Tests
+#
+###############################################################################
+###############################################################################
+###############################################################################
+
+
+#n_tests = 1000 means 1000 ms which is 1 second, 100000 means us
+
+template_names = ['name', 'n_type', 'M', 'E', 'k',
+                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'AP_per_second',
+                  'AP_length','refractory_period', 'A','tau','AP_prob_function',
+                  'other']
+template_args = make_template(template_names)
+
+
+N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5, pr = 0.6,
+                        kv = 0.02, AP_prob_function = sigmoid)
+N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v',M = 10, E = 5, pr = 0.3,
+                         A = -1, AP_prob_function = sigmoid)
+N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
+                          kv = 0.02, AP_prob_function = sigmoid)
+N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
+                            pr = 0.3, AP_prob_function = sigmoid)
+
+
+args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
+neuron_args_check(args_dict_list, template_args)
+
+N_ex = Neuron(N_ex_dict, n_tests)
+N_inh = Neuron(N_inh_dict, n_tests)
+N_post = Neuron(N_post_dict, n_tests)
+N_post_2 = Neuron(N_post_dict_2, n_tests)
+
+#Because we want to measure T_star for N_post
+N_post.counting_neuron = True
+
+c1 = [[N_ex, N_inh], [N_post]]
+c2 = [[N_post], [N_post_2]]
+
+connections = [c1, c2]
+make_pre_post_connections(connections)
+
+full_neuron_list = [N_ex, N_inh, N_post, N_post_2]
+firing_neurons_list  = [N_ex, N_inh]
+firing_neurons_dict = {neuron.name:neuron for neuron in firing_neurons_list}
+firing_times = generate_AP_times_and_reactions(firing_neurons_list)
+
+
+"""
+
+for i,f_time in enumerate(firing_times):
+
+    t_current = f_time[i][0]
+    t_next = f_time[i+1][0]
+    
+    if firing_neurons_dict[f_time[i][1]].within_refractory_period == True:
+        #Don't fire, but instead continue all other processes
+        #Get the next time and the difference between the times (time passed)
+    else: 
+        fire_neurons(f_time, i, firing_neurons_dict) #add voltage contributions
+            for post_neuron_name in firing_neurons_dict[f_time[i][1]].post().keys():
+                #update the voltage contributions
+                #
+            
+            update the voltage contribution from the neuron
+                for post_neuron in 
+                add potential based off of how much voltage from the vesicles   
+
+"""
+    
+    
+
