@@ -23,6 +23,7 @@
 ###############################################################################
 
 import numpy as np
+import random
 import matplotlib.pyplot as plt
 
 ###############################################################################
@@ -136,10 +137,12 @@ class Neuron:
         self.t_previous = 0
         self.t_current = 0
 
-        #Voltage measurements
+        #Voltage measurements and NEW ATTRIBUTES
         self.current_voltage = 0
         self.voltage_history_2 = []
         self.voltage_time_history = []
+
+        self.AP_time_history = []
 #
 
 
@@ -164,13 +167,33 @@ class Neuron:
         self.post_connections[N.name] = N
 
 
+#NEW METHODS
+        
+################################################################################
     def add_voltage(self, pre_neuron):
-        self.current_voltage += 0.01
-        print(pre_neuron.name)
+        self.current_voltage += 0.025
 
     def reduce_voltage(self, t_current, t_previous):
-        self.current_voltage -= 0.005
-        print(t_current, t_previous)        
+        random_uniform_float = np.random.uniform(0,1)
+        if random_uniform_float <= 0.5:
+            self.current_voltage -= self.kv * np.exp(-(t_current - t_previous)/ self.tau)
+        print(t_current, t_previous)
+        
+    def get_T_star(self):
+        self.T_star = []
+        
+        for i in range(1,len(self.AP_time_history)):
+            if i == 0:
+                self.T_star.append(self.AP_time_history[i])
+                continue
+            self.T_star.append(self.AP_time_history[i] - self.AP_time_history[i-1])
+        return self.T_star
+            
+
+
+        
+################################################################################
+        
 
     def display_queues(self):
         """
@@ -746,6 +769,31 @@ def generate_AP_times_and_reactions(firing_neurons):
 
     return final_times
 
+
+def get_firing_times_dict(firing_times_names):
+    firing_times_dict = {}
+    names = np.unique(np.array(firing_times_names)[:,1])
+    firing_times_dict = {name:[] for name in names}
+    for time_name in firing_times_names:
+        firing_times_dict[time_name[1]].append(time_name[0])
+    return firing_times_dict
+
+
+def plot_firing_times(firing_neurons_list, firing_times_dict):
+    fig, ax = plt.subplots(len(firing_neurons_list), 1)
+
+    for i in range(len(firing_neurons_list)):
+        time_len = len(firing_times_dict[firing_neurons_list[i].name])
+        ax[i].vlines(firing_times_dict[firing_neurons_list[i].name],
+                     ymin = 0, ymax = 1)
+    ##    ax[i].set_xlabel()
+    ##    ax[i].set_ylabel()
+        ax[i].plot([3])
+        ax[i].set_title('{} = {}'.format(firing_neurons_list[i].name,
+                        time_len))
+
+    plt.show()
+        
 
 ###############################################################################
 ###############################################################################                
@@ -1553,18 +1601,21 @@ full_neuron_list = [N_ex, N_inh, N_post, N_post_2]
 firing_neurons_list  = [N_ex, N_inh]
 firing_neurons_dict = {neuron.name:neuron for neuron in firing_neurons_list}
 firing_times_names = generate_AP_times_and_reactions(firing_neurons_list)
+firing_times_dict = get_firing_times_dict(firing_times_names)
 
-#
+plot_firing_times(firing_neurons_list, firing_times_dict)
 
-def update_voltages_and_times(pre_neuron, post_neurons_dict):
+
+
+def update_voltages_and_times(pre_neuron, post_neurons_dict, t_previous, t_current):
     for post_neuron_name in post_neurons_dict.keys():
         post_neuron = post_neurons_dict[post_neuron_name]
         post_neuron.t_current= t_current
         post_neuron.add_voltage(pre_neuron)
         post_neuron.reduce_voltage(t_current, t_previous)
         post_neuron.t_previous = t_current
+        t_previous = t_current
 
-def update_if_APs(post_neurons_dict):
     for post_neuron_name in post_neurons_dict.keys():
         post_neuron = post_neurons_dict[post_neuron_name]
         post_neuron.voltage_history_2.append(post_neuron.current_voltage)
@@ -1572,42 +1623,54 @@ def update_if_APs(post_neurons_dict):
         firing_probability = post_neuron.AP_prob_function(post_neuron.current_voltage)
         firing_decision = np.random.choice([0,1], 1, p = [1- firing_probability, firing_probability])
         if firing_decision[0] == 1:
-            update_voltages_and_times(post_neuron, post_neuron.post())
-    
+            #Need refractory period
+            post_neuron.current_voltage = 0
+            post_neuron.AP_time_history.append(t_current)
+            update_voltages_and_times(post_neuron, post_neuron.post(), t_previous, t_current)
 
 
-for i,f_time in enumerate(firing_times_names):
+#Main test
 
-    if i == 0:
-        t_previous = 0
-    else:
-        t_previous = f_time[1]
+t_previous = 0
+for i in range(len(firing_times_names)):
         
-    t_current = f_time[0]
-    firing_neuron_name = f_time[1]
+    t_current = firing_times_names[i][0]
+    if i == 0:
+        t_previous = t_current
+    else:
+        t_previous = firing_times_names[i-1][0]
+    firing_neuron_name = firing_times_names[i][1]
 
     #Must define the functions
 
     firing_neuron = firing_neurons_dict[firing_neuron_name]
     post_neurons_dict = firing_neurons_dict[firing_neuron_name].post()
-    update_voltages_and_times(firing_neuron, post_neurons_dict)
-    update_if_APs(post_neurons_dict)
+    update_voltages_and_times(firing_neuron, post_neurons_dict,
+                              t_previous, t_current)
+    #update_if_APs(post_neurons_dict, t_previous, t_current)
 
 
-#
+#Plot graphs
 
-plt.plot(N_post.voltage_history_2)
-plt.show()
-plt.plot(N_post.voltage_time_history)
-plt.show()
+##plt.title('Voltage_history_2 of $N_{post}$')
+##plt.plot(N_post.voltage_history_2)
+##plt.show()
+##
+##plt.title('Voltage_time_history of $N_{post}$')
+##plt.plot(N_post.voltage_time_history)
+##plt.show()
 
-plt.figure()
-plt.title('Voltage')
-plt.ylabel('Voltage')
-plt.xlabel('Time')
-plt.scatter(N_post.voltage_time_history, N_post.voltage_history_2, marker = '.')
-plt.show()
+def plot_voltage_vs_time(neuron):
+    plt.title('V_hist_2 vs V_time_hist for {}'.format(neuron.name))
+    plt.ylabel('Voltage')
+    plt.xlabel('Time')
+    plt.plot(neuron.voltage_time_history, neuron.voltage_history_2)
+    plt.show()
 
+
+
+plot_voltage_vs_time(N_post)
+plot_voltage_vs_time(N_post_2)
 
 
     
