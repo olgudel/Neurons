@@ -149,6 +149,8 @@ class Neuron:
         #In calculating T_star, record when an AP is initiated in the neuron
         self.AP_time_history = []
 
+        self.outside_of_refractory_period = True
+
         #
 ################################################################################
 
@@ -1596,9 +1598,11 @@ N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5, pr = 0.6,
 N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v',M = 10, E = 5, pr = 0.3,
                          A = -1, AP_prob_function = sigmoid)
 N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
-                          kv = 0.02, AP_prob_function = sigmoid)
+                          kv = 0.02, AP_prob_function = sigmoid,
+                          refractory_period = 0.001)
 N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
-                            pr = 0.3, AP_prob_function = sigmoid)
+                            pr = 0.3, AP_prob_function = sigmoid,
+                            refractory_period = 0.001)
 
 
 args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
@@ -1636,14 +1640,16 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict,
         post_neuron = post_neurons_dict[post_neuron_name]
         post_neuron.t_current= t_current
 
-        outside_of_refractory_period = (t_current - post_neuron.t_previous > \
-                                        post_neuron.refractory_period )
-        if outside_of_refractory_period == True:
+        outside_of_refractory = (t_current - post_neuron.t_previous > \
+                                 post_neuron.refractory_period )
+        post_neuron.outside_of_refractory_period = outside_of_refractory
+        
+##        outside_of_refractory_period = (t_current - post_neuron.t_previous > \
+##                                        post_neuron.refractory_period )
+        if post_neuron.outside_of_refractory_period == True:
             post_neuron.add_voltage(pre_neuron)
             post_neuron.t_previous = t_current
-##      post_neuron.add_voltage(pre_neuron)
         post_neuron.reduce_voltage(t_current, post_neuron.t_previous)
-##      post_neuron.t_previous = t_current
         t_previous = t_current
 
     for post_neuron_name in post_neurons_dict.keys():
@@ -1656,7 +1662,7 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict,
         firing_probability = post_neuron.AP_prob_function(post_neuron.current_voltage)
         firing_decision = np.random.choice([0,1], 1, p = [1- firing_probability, firing_probability])
 
-        if (firing_decision[0] == 1):# and (t_current - post_neuron.t_previous > post_neuron.refractory_period):
+        if (firing_decision[0] == 1) and (post_neuron.outside_of_refractory_period == True):# and (t_current - post_neuron.t_previous > post_neuron.refractory_period):
             
             #Need refractory period
             post_neuron.voltage_at_APs.append(post_neuron.current_voltage)
@@ -1689,8 +1695,8 @@ N_post.get_T_star(plotting = True) #plotting = True plots T_star
 
 def plot_voltage_vs_time(neuron):
     plt.title('Voltage history: {}'.format(neuron.name))
-    plt.ylabel('Voltage')
-    plt.xlabel('Time')
+    plt.ylabel('Voltage (mV)')
+    plt.xlabel('Time (s)')
     #Plot voltage history against time of voltage contributions
     plt.plot(neuron.voltage_time_history, neuron.voltage_history_2)
     #Plot the threhold line
