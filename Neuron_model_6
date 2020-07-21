@@ -177,17 +177,40 @@ class Neuron:
         self.post_connections[N.name] = N
 
 
-#NEW METHODS
-        
+#NEW METHODS    
 ################################################################################
     def add_voltage(self, pre_neuron):
+
+
+        self.b = np.random.binomial(self.M - self.E, self.pr)
+        self.b_history.append(self.b)
+
+        self.E += self.b
+        self.E_history.append(self.E)
+        
+##                
+##                #This step is further in the code, reset or history function
+##                #Maybe add a marker
+##                self.E += self.b
+##                self.E_history.append(self.E)
+##                rnum = np.random.uniform(0,1)
+##                if rnum >= 0.8:
+##                    refilled_vesicles = np.random.randint(1, self.E+2)
+##                    self.E_history[-1] -= refilled_vesicles
+##                    self.E -= refilled_vesicles
+##                
+##                new_voltage_shape = self.A * self.kv * self.b * \
+##                            np.exp(-np.arange(post_neuron_AP_length)/self.tau)
+##                return new_voltage_shape
+
         self.current_voltage += 0.025
 
-    def reduce_voltage(self, t_current, t_previous):
+    def reduce_voltage(self, t_current):
         random_uniform_float = np.random.uniform(0,1)
         if random_uniform_float <= 0.5:
-            self.current_voltage -= self.kv * np.exp(-(t_current - t_previous)/ self.tau)
-        print(t_current, t_previous)
+            self.current_voltage -= self.kv * \
+                        (1-np.exp((t_current - self.t_previous)/ self.tau))
+        print(t_current, self.t_previous)
         
     def get_T_star(self, plotting=False):
         self.T_star = []
@@ -208,14 +231,8 @@ class Neuron:
             plt.title('T_star')
             plt.legend()
             plt.show()
-        return self.T_star
-    
-            
-
-
-        
+        return self.T_star        
 ################################################################################
-
 #NEW METHODS END        
 
     def display_queues(self):
@@ -727,7 +744,7 @@ def get_T_star(T_star_list):
             counter = 0
     return T_star
 
-def sigmoid(x, y1=-5, y2=20, x1=0, x2=0.2):
+def sigmoid(x, y1=-5, y2=30, x1=0, x2=0.2):
     #MODIFY SIGMOIDAL FUNCTION
     m = (y2-y1) / (x2-x1)
     y = m*x - y2
@@ -1632,8 +1649,7 @@ plot_firing_times(firing_neurons_list, firing_times_dict)
 
 
 
-def update_voltages_and_times(pre_neuron, post_neurons_dict,
-                              t_previous, t_current):
+def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
 
     for post_neuron_name in post_neurons_dict.keys():
         
@@ -1649,8 +1665,7 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict,
         if post_neuron.outside_of_refractory_period == True:
             post_neuron.add_voltage(pre_neuron)
             post_neuron.t_previous = t_current
-        post_neuron.reduce_voltage(t_current, post_neuron.t_previous)
-        t_previous = t_current
+            post_neuron.reduce_voltage(t_current)
 
     for post_neuron_name in post_neurons_dict.keys():
         
@@ -1659,34 +1674,32 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict,
         post_neuron.voltage_time_history.append(post_neuron.t_current)
 
         #Determine whether or not to fire the post neuron
-        firing_probability = post_neuron.AP_prob_function(post_neuron.current_voltage)
-        firing_decision = np.random.choice([0,1], 1, p = [1- firing_probability, firing_probability])
+        firing_probability = \
+                    post_neuron.AP_prob_function(post_neuron.current_voltage)
+        firing_decision = np.random.choice([0,1], 1, p = [1- firing_probability,
+                                                          firing_probability])
 
-        if (firing_decision[0] == 1) and (post_neuron.outside_of_refractory_period == True):# and (t_current - post_neuron.t_previous > post_neuron.refractory_period):
+        if (firing_decision[0] == 1) and \
+           (post_neuron.outside_of_refractory_period == True):
             
-            #Need refractory period
             post_neuron.voltage_at_APs.append(post_neuron.current_voltage)
             post_neuron.current_voltage = 0
             post_neuron.AP_time_history.append(t_current)
-            update_voltages_and_times(post_neuron, post_neuron.post(), t_previous, t_current)
+            update_voltages_and_times(post_neuron, post_neuron.post(),
+                                      t_current)
 
 
 #Main test
 
 for i in range(len(firing_times_names)):
-        
+
     t_current = firing_times_names[i][0]
-    if i == 0:
-        t_previous = t_current
-    else:
-        t_previous = firing_times_names[i-1][0]
         
     firing_neuron_name = firing_times_names[i][1]
     firing_neuron = firing_neurons_dict[firing_neuron_name]
     post_neurons_dict = firing_neurons_dict[firing_neuron_name].post()
     
-    update_voltages_and_times(firing_neuron, post_neurons_dict,
-                              t_previous, t_current)
+    update_voltages_and_times(firing_neuron, post_neurons_dict, t_current)
 
 
 
@@ -1709,7 +1722,10 @@ def plot_voltage_vs_time(neuron):
     plt.show()
 
 
-
+#If bottom peaks go to 0, it means that a presynaptic neuron tried to
+#add voltage, but nothing happened because the neuron was within the
+#refractory period.
+    
 plot_voltage_vs_time(N_post)
 plot_voltage_vs_time(N_post_2)
 
