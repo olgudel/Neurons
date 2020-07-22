@@ -884,10 +884,11 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
         
         if pre_neuron.name == 'N_post_3':
             print(pre_neuron.name, ' FOUND THE NEURON')
+            
         post_neuron = post_neurons_dict[post_neuron_name]
         post_neuron.t_current= t_current
 
-        if pre_neuron.effect != 'None':
+        if pre_neuron.effect == 'vth':
             post_neuron.vth = 0.15
             post_neuron.AP_prob_function = partial(sigmoid, vth = post_neuron.vth)
             print('CHANGED')
@@ -895,14 +896,7 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
         post_neuron.outside_of_refractory_period = \
                                 (t_current - post_neuron.t_previous > \
                                  post_neuron.refractory_period )
-        
-        if pre_neuron.name == 'N_post_3':
-            print(post_neuron.outside_of_refractory_period)
-
-
-        if pre_neuron.effect != 'None':
-            post_neuron.outside_of_refractory_period == True
-            
+                    
         if post_neuron.outside_of_refractory_period == True:
             if pre_neuron.name == 'N_post_3':
                 print(pre_neuron.name, ' adding voltage')
@@ -1156,7 +1150,7 @@ plot_voltage_vs_time(N_post, n_seconds)
 plot_voltage_vs_time(N_post_2, n_seconds)
 plot_voltage_vs_time(N_post_3, n_seconds)
         
-##plot_vesicles(N_ex)
-##plot_vesicles(N_post)
-##plot_vesicles(N_post_2)
+plot_vesicles(N_ex)
+plot_vesicles(N_post)
+plot_vesicles(N_post_2)
 
