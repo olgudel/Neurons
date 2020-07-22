@@ -134,12 +134,14 @@ class Neuron:
         self.b = 0
 
         #Effect neuron
+        self.effect_neuron = False
         self.effect_function = 'None'
 
 
-#NEW ATTRIBUTES
+
 
 ################################################################################
+#NEW ATTRIBUTES
         #Time measurements
         self.t_previous = 0
         self.t_current = 0
@@ -161,9 +163,10 @@ class Neuron:
         self.firing_probability = 0
 
         #
+#END NEW ATTRIBUTES
 ################################################################################
 
-#END NEW ATTRIBUTES
+
 
     
     def pre(self):
@@ -186,11 +189,13 @@ class Neuron:
         self.post_connections[N.name] = N
 
 
-#NEW METHODS    
+  
 ################################################################################
+#NEW METHODS  
     def add_voltage(self, pre_neuron):
 
-        if pre_neuron.effect_function != 'None':
+        if pre_neuron.effect_neuron == True:
+            print('Active effect')
             pre_neuron.effect_function(pre_neuron, self)
             return None
         pre_neuron.b = np.random.binomial(pre_neuron.M - pre_neuron.E, pre_neuron.pr)
@@ -224,7 +229,7 @@ class Neuron:
         if random_uniform_float <= 0.5:
             self.current_voltage -= self.kv * \
                         (1-np.exp((t_current - self.t_previous)/ self.tau))
-        print(t_current, self.t_previous)
+##        print(t_current, self.t_previous)
         
     def get_T_star(self, plotting=False):
         self.T_star = []
@@ -248,9 +253,10 @@ class Neuron:
         return self.T_star
     def get_firing_decision(self, percentage):
         self.firing_decision = np.random.uniform(0,1) <= percentage
-        
+
+ #NEW METHODS END         
 ################################################################################
-#NEW METHODS END        
+      
 
     def display_queues(self):
         """
@@ -1839,7 +1845,9 @@ N_post_3 = Neuron(N_post_dict_3, n_tests) #Measuring neuron for N_post_2
 
 def reduce_vth(pre_neuron, post_neuron):
 	post_neuron.vth = 0.15
+	print(post_neuron.vth)
 
+N_post_3.effect_neuron = True
 N_post_3.effect_function = reduce_vth
 
 c1 = [[N_ex, N_inh], [N_post]]
@@ -1884,7 +1892,7 @@ plot_voltage_vs_time(N_post, n_seconds)
 plot_voltage_vs_time(N_post_2, n_seconds)
 plot_voltage_vs_time(N_post_3, n_seconds)
         
-plot_vesicles(N_ex)
-plot_vesicles(N_post)
-plot_vesicles(N_post_2)
+##plot_vesicles(N_ex)
+##plot_vesicles(N_post)
+##plot_vesicles(N_post_2)
 
