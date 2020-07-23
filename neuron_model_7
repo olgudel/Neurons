@@ -878,6 +878,8 @@ def plot_firing_times(firing_neurons_list, firing_times_dict):
                      ymin = 0, ymax = 1)
         if i == (len(firing_neurons_list) - 1):
             ax[i].set_xlabel('Time (seconds)')
+        else:
+            ax[i].set_xticks([])
         ax[i].plot([3])
         ax[i].set_title('{} = {}'.format(firing_neurons_list[i].name,
                         time_len))
@@ -1155,7 +1157,7 @@ firing_times_names = generate_AP_times_and_reactions(firing_neurons_list,
                                                      n_seconds)
 firing_times_dict = get_firing_times_dict(firing_times_names)
 
-##plot_firing_times(firing_neurons_list, firing_times_dict)
+#plot_firing_times(firing_neurons_list, firing_times_dict)
 
 #Main test
 
