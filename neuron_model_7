@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+\#-------------------------------------------------------------------------------
 #
 #                                  Notes 1:
 #
@@ -163,6 +163,7 @@ class Neuron:
         self.queue_size = self.AP_length
         self.voltage_queue = Queue(self.queue_size)
         self.voltage_history = []
+        self.vth_history = []
 
 
         #Vesicle history
@@ -248,7 +249,8 @@ class Neuron:
 ##            self.vth = 0.15
 ##            print('Set')
 
-        pre_neuron.b = np.random.binomial(pre_neuron.M - pre_neuron.E, pre_neuron.pr)
+        pre_neuron.b = np.random.binomial(pre_neuron.M - pre_neuron.E,
+                                          pre_neuron.pr)
         pre_neuron.b_history.append(pre_neuron.b)
 
         pre_neuron.E += pre_neuron.b
@@ -258,6 +260,7 @@ class Neuron:
         pre_neuron.E -= pre_neuron.vesicles_refilled
 
         pre_neuron.E_history.append(pre_neuron.E)
+
 
         #If it's not an effect neuron, change the voltage
         if len(pre_neuron.effects) == 0:
@@ -931,9 +934,6 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
 
     for post_neuron_name in post_neurons_dict.keys():
         
-        if pre_neuron.name == 'N_post_3':
-            print(pre_neuron.name, ' FOUND THE NEURON')
-            
         post_neuron = post_neurons_dict[post_neuron_name]
         post_neuron.t_current= t_current
 
@@ -947,8 +947,6 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
                                  post_neuron.refractory_period )
                     
         if post_neuron.outside_of_refractory_period == True:
-            if pre_neuron.name == 'N_post_3':
-                print(pre_neuron.name, ' adding voltage')
 
             post_neuron.add_voltage(pre_neuron)
             post_neuron.t_previous = t_current
@@ -959,6 +957,7 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
         post_neuron = post_neurons_dict[post_neuron_name]
         post_neuron.voltage_history_2.append(post_neuron.current_voltage)
         post_neuron.voltage_time_history.append(post_neuron.t_current)
+        post_neuron.vth_history.append(post_neuron.vth)
 
         #Determine whether or not to fire the post neuron
         post_neuron.firing_probability = \
@@ -967,8 +966,6 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
         
         if (post_neuron.firing_decision == True) and \
            (post_neuron.outside_of_refractory_period == True):
-            if pre_neuron.name == 'N_post_3':
-                print(pre_neuron.name, ' adding voltage to ', post_neuron)
             post_neuron.effected = True
             post_neuron.voltage_at_APs.append(post_neuron.current_voltage)
             post_neuron.current_voltage = 0
@@ -988,7 +985,7 @@ def plot_voltage_vs_time(neuron, n_seconds):
     
     #Plot the threhold line
     plt.plot(np.linspace(0,n_seconds,len(neuron.voltage_time_history)),
-             neuron.vth * np.ones(len(neuron.voltage_time_history)),
+             np.array(neuron.vth_history) * np.ones(len(neuron.voltage_time_history)),
              color = 'black')
     
     #Plot the action potential marks
@@ -1212,22 +1209,22 @@ for i in range(len(firing_times_names)):
     update_voltages_and_times(firing_neuron, post_neurons_dict, t_current)
 
 
-N_post.get_T_star(plotting = True) #plotting = True plots T_star
-N_post_2.get_T_star(plotting=True)
-
+##N_post.get_T_star(plotting = True) #plotting = True plots T_star
+##N_post_2.get_T_star(plotting=True)
+##
 #If bottom peaks go to 0, it means that a presynaptic neuron tried to
 #add voltage, but nothing happened because the neuron was within the
 #refractory period.
     
-##plot_voltage_vs_time(N_post, n_seconds)
-##plot_voltage_vs_time(N_post_2, n_seconds)
-##plot_voltage_vs_time(N_post_3, n_seconds)
-##plot_voltage_vs_time(N_post_4, n_seconds)
-##
+plot_voltage_vs_time(N_post, n_seconds)
+plot_voltage_vs_time(N_post_2, n_seconds)
+plot_voltage_vs_time(N_post_3, n_seconds)
+plot_voltage_vs_time(N_post_4, n_seconds)
+
         
-plot_vesicles(N_ex)
-plot_vesicles(N_post)
-plot_vesicles(N_post_2)
-plot_vesicles(N_post_3)
-plot_vesicles(N_post_4)
+##plot_vesicles(N_ex)
+##plot_vesicles(N_post)
+##plot_vesicles(N_post_2)
+##plot_vesicles(N_post_3)
+##plot_vesicles(N_post_4)
 
