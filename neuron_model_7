@@ -138,6 +138,9 @@ class Neuron:
         self.effect = 'None'
         self.effected = False
 
+        self.firing_neuron = False
+        self.effects = {}
+
 
 
 
@@ -196,9 +199,13 @@ class Neuron:
     def add_voltage(self, pre_neuron):
         #print(pre_neuron.name, ' to ', self.name)
 
-        if pre_neuron.name == 'N_post_3':
-                print('N_POST_3_FOUND ', pre_neuron.name)
-                self.vth = 0.15
+        if len(pre_neuron.effects) != 0:
+##                print('N_POST_3_FOUND ', pre_neuron.name)
+##                self.vth = 0.15
+
+                for effect_name in pre_neuron.effects:
+                    self.__dict__[effect_name] = pre_neuron.effects[effect_name]
+                    self.AP_prob_function = partial(sigmoid, vth = self.vth)
                 
 ##        if pre_neuron.effect == 'vth':
 ##            print('Passed')
@@ -213,7 +220,9 @@ class Neuron:
         pre_neuron.vesicles_refilled = np.random.binomial(pre_neuron.E, 0.4)
         pre_neuron.vesicle_refill_history.append(pre_neuron.vesicles_refilled)
         pre_neuron.E -= pre_neuron.vesicles_refilled
-        if pre_neuron.effect == 'None':
+
+        #If it's not an effect neuron, change the voltage
+        if len(pre_neuron.effects) == 0:
             self.current_voltage += pre_neuron.kv * pre_neuron.b
         
         
@@ -888,10 +897,10 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
         post_neuron = post_neurons_dict[post_neuron_name]
         post_neuron.t_current= t_current
 
-        if pre_neuron.effect == 'vth':
-            post_neuron.vth = 0.15
-            post_neuron.AP_prob_function = partial(sigmoid, vth = post_neuron.vth)
-            print('CHANGED')
+##        if len(pre_neuron.effects) > 0 :
+##            post_neuron.vth = 0.15
+##            post_neuron.AP_prob_function = partial(sigmoid, vth = post_neuron.vth)
+##            print('CHANGED')
 
         post_neuron.outside_of_refractory_period = \
                                 (t_current - post_neuron.t_previous > \
@@ -1095,6 +1104,14 @@ N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
 N_post_dict_3 = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5,
                             pr = 0.3, AP_prob_function = sigmoid,
                             refractory_period = 0.001)
+N_post_dict_4 = neuron_dict(name = 'N_post_4',n_type='ex',M = 10, E = 5,
+                            pr = 0.3, AP_prob_function = sigmoid,
+                            refractory_period = 0.001)
+
+N_ex_2_dict = neuron_dict(name = 'N_ex_2', n_type = 'ex', M = 10, E = 5,
+                          pr = 0.6, kv = 0.02, AP_per_second = 10,
+                          AP_prob_function = sigmoid)
+
 
 
 args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
@@ -1102,24 +1119,37 @@ neuron_args_check(args_dict_list, template_args)
 
 N_ex = Neuron(N_ex_dict, n_tests)
 N_inh = Neuron(N_inh_dict, n_tests)
+N_ex_2 = Neuron(N_ex_2_dict, n_tests)
+
+N_ex.firing_neuron = True
+N_inh.firing_neuron = True
+N_ex_2.firing_neuron = True
+
 N_post = Neuron(N_post_dict, n_tests)
 N_post_2 = Neuron(N_post_dict_2, n_tests)
 N_post_3 = Neuron(N_post_dict_3, n_tests) #Measuring neuron for N_post_2
+N_post_4 = Neuron(N_post_dict_4, n_tests)
 
-N_post_3.effect = 'vth'
+N_post_4.effects = {'vth': 0.10}
 
 c1 = [[N_ex, N_inh], [N_post]]
 c2 = [[N_post], [N_post_2]]
 c3 = [N_post_2, N_post_3]
-c4 = [N_post_3, N_post]
+c4 = [N_post_3, N_post_4]
+c5 = [N_post_4, N_post_2]
 
-connections = [c1, c2, c3, c4]
+c6 = [N_ex_2, N_post_4]
+
+connections = [c1, c2, c3, c4, c5, c6]
 make_pre_post_connections(connections)
 
 
+
 n_seconds = 1
-full_neuron_list = [N_ex, N_inh, N_post, N_post_2, N_post_3]
-firing_neurons_list  = [N_ex, N_inh]
+full_neuron_list = [N_ex, N_inh, N_post, N_post_2, N_post_3, N_post_4, N_ex_2]
+
+firing_neurons_list  = [neuron for neuron in full_neuron_list \
+                        if (neuron.firing_neuron  == True)]
 firing_neurons_dict = {neuron.name:neuron for neuron in firing_neurons_list}
 firing_times_names = generate_AP_times_and_reactions(firing_neurons_list,
                                                      n_seconds)
@@ -1140,7 +1170,7 @@ for i in range(len(firing_times_names)):
     update_voltages_and_times(firing_neuron, post_neurons_dict, t_current)
 
 
-##N_post.get_T_star(plotting = True) #plotting = True plots T_star
+#N_post.get_T_star(plotting = True) #plotting = True plots T_star
 
 #If bottom peaks go to 0, it means that a presynaptic neuron tried to
 #add voltage, but nothing happened because the neuron was within the
@@ -1149,8 +1179,12 @@ for i in range(len(firing_times_names)):
 plot_voltage_vs_time(N_post, n_seconds)
 plot_voltage_vs_time(N_post_2, n_seconds)
 plot_voltage_vs_time(N_post_3, n_seconds)
-        
-plot_vesicles(N_ex)
-plot_vesicles(N_post)
-plot_vesicles(N_post_2)
+plot_voltage_vs_time(N_post_4, n_seconds)
 
+##        
+##plot_vesicles(N_ex)
+##plot_vesicles(N_post)
+##plot_vesicles(N_post_2)
+##plot_vesicles(N_post_3)
+##plot_vesicles(N_post_4)
+##
