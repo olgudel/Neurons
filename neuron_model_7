@@ -1,4 +1,8 @@
-#Notes
+#-------------------------------------------------------------------------------
+#
+#                                  Notes 1:
+#
+#--------------------------------------------------------------------------------
 
 #Plot number of released vesicles, number of docked vesicles
 #Plot all variabls in detail.  Empty vs filled, number of new vesicles,
@@ -10,7 +14,39 @@
 
 #Change the frequency plot all variables.  Benchmarking code against Zahra's.
 
-#Gillespi to choose next reaction: np.random.choice([reactions], 1, p = [pr1, ...])
+  #Gillespi to choose next reaction: np.random.choice([reactions], 1, p = [pr1, ...])
+
+#-------------------------------------------------------------------------------
+#
+#                                  Notes 2:
+#
+#-------------------------------------------------------------------------------
+
+#Powerpoint slides to describe the mathematics of when to fire and refill
+#vesicles.  What are the rules?  At each time step, each site has a probability
+#of filling.  In the next time step, some of the empty ones will get filled up.
+#There's binomial refilling distribution.
+
+#What questions can I answer with them?  Read paper.  See how dynamics
+
+#Proportionality constant times the number of vesicles released, pconst is num
+#of ntransmitters.  nreleased is a function of frequency.
+
+#Feedback itself controlling its frequency and having it
+#be more precise negative feedback
+
+#What's a simple system to work with?  What is the noise in AP timing as a
+#function of the two input strengths?  When you have two inputs coming in, how
+#is the noise in the output neuron depend on the strength of the two inputs
+#coming in.  What is the noise in the timing of N1 action potentials?
+#Firing time statistics, mean time period, noise.  How does that change with
+#the two input strengths.  What happens if we include phenomena of higher
+#frequences giving higher burst sizes.  What happens if you have self feedback?
+
+#How can I use my program to explain the data from the programs?
+
+#Plotting vesicles: (1.) Number of vesicles present,
+#(2.) number of empty sites, (3.) number of releases.
 
 ###############################################################################
 #########################+######################################################                
@@ -135,11 +171,11 @@ class Neuron:
         self.b = 0
 
         #Effect neuron
-        self.effect = 'None'
-        self.effected = False
-
         self.firing_neuron = False
         self.effects = {}
+
+        #Neurotransmitter attributes
+        self.nt_per_vesicles = self.nt = np.random.randint(3000, 10001)
 
 
 
@@ -216,10 +252,12 @@ class Neuron:
         pre_neuron.b_history.append(pre_neuron.b)
 
         pre_neuron.E += pre_neuron.b
-        pre_neuron.E_history.append(pre_neuron.E)
+##        pre_neuron.E_history.append(pre_neuron.E)
         pre_neuron.vesicles_refilled = np.random.binomial(pre_neuron.E, 0.4)
         pre_neuron.vesicle_refill_history.append(pre_neuron.vesicles_refilled)
         pre_neuron.E -= pre_neuron.vesicles_refilled
+
+        pre_neuron.E_history.append(pre_neuron.E)
 
         #If it's not an effect neuron, change the voltage
         if len(pre_neuron.effects) == 0:
@@ -244,7 +282,7 @@ class Neuron:
     def reduce_voltage(self, t_current):
         random_uniform_float = np.random.uniform(0,1)
         if random_uniform_float <= 0.5:
-            self.current_voltage -= self.kv * \
+            self.current_voltage -=\
                         (1-np.exp((t_current - self.t_previous)/ self.tau))
 ##        print(t_current, self.t_previous)
         
@@ -964,13 +1002,14 @@ def plot_vesicles(neuron):
 
     history_plots = [neuron.E_history, neuron.b_history, neuron.vesicle_refill_history]
     history_names = ['Empty history', 'Release History','Refill History']
-    y_labels = ['Empty vesicles', 'Released vesicles', 'Refilled Vesicles']
+    y_labels = ['Number of Empty', 'Number released', 'Number refilled']
 
     fig, ax = plt.subplots(3,1)
     fig.suptitle(neuron.name)
     for i, history_list in enumerate(history_plots):
         ax[i].set_title(history_names[i])
-        ax[i].plot(history_list)
+        ax[i].stem(range(len(history_list)),history_list, markerfmt='.')
+        ax[i].set_yticks(range(neuron.M))
         if i != (len(history_plots) - 1 ):
             ax[i].set_xticks([])
         if i == (len(history_plots) - 1 ):
@@ -1111,7 +1150,7 @@ N_post_dict_4 = neuron_dict(name = 'N_post_4',n_type='ex',M = 10, E = 5,
                             refractory_period = 0.001)
 
 N_ex_2_dict = neuron_dict(name = 'N_ex_2', n_type = 'ex', M = 10, E = 5,
-                          pr = 0.6, kv = 0.02, AP_per_second = 10,
+                          pr = 0.6, kv = 0.02, AP_per_second = 5,
                           AP_prob_function = sigmoid)
 
 
@@ -1146,8 +1185,9 @@ connections = [c1, c2, c3, c4, c5, c6]
 make_pre_post_connections(connections)
 
 
-
 n_seconds = 1
+
+
 full_neuron_list = [N_ex, N_inh, N_post, N_post_2, N_post_3, N_post_4, N_ex_2]
 
 firing_neurons_list  = [neuron for neuron in full_neuron_list \
@@ -1172,21 +1212,22 @@ for i in range(len(firing_times_names)):
     update_voltages_and_times(firing_neuron, post_neurons_dict, t_current)
 
 
-#N_post.get_T_star(plotting = True) #plotting = True plots T_star
+N_post.get_T_star(plotting = True) #plotting = True plots T_star
+N_post_2.get_T_star(plotting=True)
 
 #If bottom peaks go to 0, it means that a presynaptic neuron tried to
 #add voltage, but nothing happened because the neuron was within the
 #refractory period.
     
-plot_voltage_vs_time(N_post, n_seconds)
-plot_voltage_vs_time(N_post_2, n_seconds)
-plot_voltage_vs_time(N_post_3, n_seconds)
-plot_voltage_vs_time(N_post_4, n_seconds)
-
-##        
-##plot_vesicles(N_ex)
-##plot_vesicles(N_post)
-##plot_vesicles(N_post_2)
-##plot_vesicles(N_post_3)
-##plot_vesicles(N_post_4)
+##plot_voltage_vs_time(N_post, n_seconds)
+##plot_voltage_vs_time(N_post_2, n_seconds)
+##plot_voltage_vs_time(N_post_3, n_seconds)
+##plot_voltage_vs_time(N_post_4, n_seconds)
 ##
+        
+plot_vesicles(N_ex)
+plot_vesicles(N_post)
+plot_vesicles(N_post_2)
+plot_vesicles(N_post_3)
+plot_vesicles(N_post_4)
+
