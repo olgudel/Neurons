@@ -62,6 +62,7 @@ import numpy as np
 import random
 import matplotlib.pyplot as plt
 from functools import partial
+import pandas as pd
 
 ###############################################################################
 ###############################################################################                
@@ -306,6 +307,7 @@ class Neuron:
             plt.xlabel('k-th instance of T_star')
             plt.ylabel('Time (ms)')
             plt.title('T_star')
+            plt.xticks(range(1, len(self.T_star)))
             plt.legend()
             plt.show()
         return self.T_star
@@ -869,34 +871,64 @@ def generate_AP_times_and_reactions(firing_neurons, n_seconds):
     Generate AP times and what neurons are firing at that time.
     """
 
-    APs_per_second_list = [neuron.AP_per_second for neuron in firing_neurons]
-    total_firings = np.sum(APs_per_second_list)
+##    APs_per_second_list = [neuron.AP_per_second for neuron in firing_neurons]
+##    total_firings = np.sum(APs_per_second_list)
+##
+##    poisson_times = []
+##    for i in range(n_seconds):
+##        poisson_times.append(i + generate_poisson_times(total_firings))
+##    poisson_times = np.array(poisson_times)
+##    poisson_times.sort()
+##    poisson_times = set(poisson_times.ravel())
 
-    poisson_times = []
-    for i in range(n_seconds):
-        poisson_times.append(i + generate_poisson_times(total_firings))
-    poisson_times = np.array(poisson_times)
-    poisson_times.sort()
-    poisson_times = set(poisson_times.ravel())
-
+    #
+    fns = []
+    for j, firing_neuron in enumerate(firing_neurons):
+        poisson_times = []
+        for i in range(n_seconds):
+            p_times = [i + generate_poisson_times(firing_neuron.AP_per_second)]
+            p_times = np.ravel(np.array(p_times))
+            poisson_times.append(p_times)
+        poisson_times = np.ravel(poisson_times)
+        fns.append(poisson_times)
+    fns = np.array(fns)
     
+    numbers = []
+    for i, neuron_times in enumerate(fns):
+        numbers.append((i * np.ones(len(neuron_times))).astype(int))
 
+    Q = []
+    for i, number_list in enumerate(numbers):
+        q = np.vstack([fns[i], numbers[i]]).T
+        Q.append(q)
+    Q = np.vstack(Q)
 
-    AP_times_list = []
-    APs_per_second_list = list(n_seconds * np.array(APs_per_second_list))
-    for AP_num in APs_per_second_list:
-        chosen_times = set(random.sample(poisson_times, AP_num))
-        poisson_times -= chosen_times
-        AP_times_list.append(chosen_times)
-
+    Q = pd.DataFrame(Q)
+    Q = Q.sort_values(0)
+    Q = np.array(Q)
+    
     final_times = []
-    total_firings = np.sum(APs_per_second_list)
-    for j in range(total_firings):
-        mins_list = [min(AP_times_list[i]) for i in range(len(AP_times_list)) if (len(AP_times_list[i]) > 0)]
-        min_time = min(mins_list)
-        argmin = int(np.argmin(mins_list))
-        final_times.append([min_time, firing_neurons[argmin].name])
-        AP_times_list[argmin] -= set([min_time])
+    for i, time in enumerate(Q):
+        final_times.append([Q[i][0], firing_neurons[int(Q[i][1])].name])
+        
+    #
+
+
+##    AP_times_list = []
+##    APs_per_second_list = list(n_seconds * np.array(APs_per_second_list))
+##    for AP_num in APs_per_second_list:
+##        chosen_times = set(random.sample(poisson_times, AP_num))
+##        poisson_times -= chosen_times
+##        AP_times_list.append(chosen_times)
+##
+##    final_times = []
+##    total_firings = np.sum(APs_per_second_list)
+##    for j in range(total_firings):
+##        mins_list = [min(AP_times_list[i]) for i in range(len(AP_times_list)) if (len(AP_times_list[i]) > 0)]
+##        min_time = min(mins_list)
+##        argmin = int(np.argmin(mins_list))
+##        final_times.append([min_time, firing_neurons[argmin].name])
+##        AP_times_list[argmin] -= set([min_time])
 
     return final_times
 
@@ -999,13 +1031,13 @@ def plot_vesicles(neuron):
 
     history_plots = [neuron.E_history, neuron.b_history, neuron.vesicle_refill_history]
     history_names = ['Empty history', 'Release History','Refill History']
-    y_labels = ['Number of Empty', 'Number released', 'Number refilled']
+    y_labels = ['#Empty', '#Released', 'Refilled']
 
     fig, ax = plt.subplots(3,1)
     fig.suptitle(neuron.name)
     for i, history_list in enumerate(history_plots):
         ax[i].set_title(history_names[i])
-        ax[i].stem(range(len(history_list)),history_list, markerfmt='.')
+        ax[i].plot(range(len(history_list)),history_list)
         ax[i].set_yticks(range(neuron.M))
         if i != (len(history_plots) - 1 ):
             ax[i].set_xticks([])
@@ -1129,7 +1161,8 @@ template_args = make_template(template_names)
 N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5, pr = 0.6,
                         kv = 0.02, AP_prob_function = sigmoid)
 N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v',M = 10, E = 5, pr = 0.3,
-                         A = 1, AP_prob_function = sigmoid)
+                         A = 1, AP_prob_function = sigmoid, kv = -0.02)
+
 N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
                           kv = 0.02, AP_prob_function = sigmoid,
                           refractory_period = 0.001)
@@ -1147,7 +1180,7 @@ N_post_dict_4 = neuron_dict(name = 'N_post_4',n_type='ex',M = 10, E = 5,
                             refractory_period = 0.001)
 
 N_ex_2_dict = neuron_dict(name = 'N_ex_2', n_type = 'ex', M = 10, E = 5,
-                          pr = 0.6, kv = 0.02, AP_per_second = 5,
+                          pr = 0.6, kv = 0.02, AP_per_second = 10,
                           AP_prob_function = sigmoid)
 
 
@@ -1209,9 +1242,9 @@ for i in range(len(firing_times_names)):
     update_voltages_and_times(firing_neuron, post_neurons_dict, t_current)
 
 
-##N_post.get_T_star(plotting = True) #plotting = True plots T_star
-##N_post_2.get_T_star(plotting=True)
-##
+N_post.get_T_star(plotting = True) #plotting = True plots T_star
+N_post_2.get_T_star(plotting=True)
+
 #If bottom peaks go to 0, it means that a presynaptic neuron tried to
 #add voltage, but nothing happened because the neuron was within the
 #refractory period.
@@ -1222,9 +1255,9 @@ plot_voltage_vs_time(N_post_3, n_seconds)
 plot_voltage_vs_time(N_post_4, n_seconds)
 
         
-##plot_vesicles(N_ex)
-##plot_vesicles(N_post)
-##plot_vesicles(N_post_2)
-##plot_vesicles(N_post_3)
-##plot_vesicles(N_post_4)
+plot_vesicles(N_ex)
+plot_vesicles(N_post)
+plot_vesicles(N_post_2)
+plot_vesicles(N_post_3)
+plot_vesicles(N_post_4)
 
