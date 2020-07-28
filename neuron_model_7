@@ -939,6 +939,8 @@ def plot_firing_times(firing_neurons_list, firing_times_dict):
         
 def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
 
+    pre_neuron.t_current = t_current
+
     for post_neuron_name in post_neurons_dict.keys():
         
         post_neuron = post_neurons_dict[post_neuron_name]
@@ -947,19 +949,15 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
                                  post_neuron.refractory_period )
                     
         if post_neuron.outside_of_refractory_period == True:
-            post_neuron.t_current= t_current
+            post_neuron.t_current = t_current
 
-##            if pre_neuron.name == 'N_post':
-##                print('Start')
-##                print(post_neuron.name)
-##                print(post_neuron.t_previous, post_neuron.t_current)
+
             post_neuron.add_voltage(pre_neuron)
             post_neuron.t_previous = t_current
-##            if pre_neuron.name == 'N_post':
-##                print(post_neuron.t_previous, post_neuron.t_current)
-##                print('End')
-##
             post_neuron.reduce_voltage(t_current)
+
+    pre_neuron.t_previous = t_current            
+    
 
     for post_neuron_name in post_neurons_dict.keys():
         
