@@ -248,6 +248,7 @@ class Neuron:
         pre_neuron.t_diff = pre_neuron.t_current - pre_neuron.t_previous
         pre_neuron.refill_ratio = pre_neuron.t_diff / \
                                       pre_neuron.vesicle_refill_time
+        pre_neuron.refill_ratio = np.clip(pre_neuron.refill_ratio, 0, 1)
 
         pre_neuron.b = np.random.binomial(pre_neuron.M - pre_neuron.E,
                                           pre_neuron.pr)
