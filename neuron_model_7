@@ -240,7 +240,11 @@ class Neuron:
                 for effect_name in pre_neuron.effects:
                     self.__dict__[effect_name] = pre_neuron.effects[effect_name]
                     self.AP_prob_function = partial(sigmoid, vth = self.vth)
-                
+
+
+        #
+        
+        #        
         pre_neuron.t_diff = pre_neuron.t_current - pre_neuron.t_previous
         pre_neuron.refill_ratio = pre_neuron.t_diff / \
                                       pre_neuron.vesicle_refill_time
@@ -1236,10 +1240,10 @@ plot_voltage_vs_time(N_post_2, n_seconds)
 plot_voltage_vs_time(N_post_3, n_seconds)
 plot_voltage_vs_time(N_post_4, n_seconds)
 
-##        
-##plot_vesicles(N_ex)
-##plot_vesicles(N_post)
-##plot_vesicles(N_post_2)
-##plot_vesicles(N_post_3)
-##plot_vesicles(N_post_4)
+        
+plot_vesicles(N_ex)
+plot_vesicles(N_post)
+plot_vesicles(N_post_2)
+plot_vesicles(N_post_3)
+plot_vesicles(N_post_4)
 
