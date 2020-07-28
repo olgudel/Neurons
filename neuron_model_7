@@ -1,4 +1,4 @@
-\#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 #
 #                                  Notes 1:
 #
@@ -882,7 +882,7 @@ def generate_AP_times_and_reactions(firing_neurons, n_seconds):
 ##    poisson_times = set(poisson_times.ravel())
 
     #
-    fns = []
+    firing_times = []
     for j, firing_neuron in enumerate(firing_neurons):
         poisson_times = []
         for i in range(n_seconds):
@@ -890,26 +890,26 @@ def generate_AP_times_and_reactions(firing_neurons, n_seconds):
             p_times = np.ravel(np.array(p_times))
             poisson_times.append(p_times)
         poisson_times = np.ravel(poisson_times)
-        fns.append(poisson_times)
-    fns = np.array(fns)
+        firing_times.append(poisson_times)
+    firing_times = np.array(firing_times)
     
     numbers = []
-    for i, neuron_times in enumerate(fns):
+    for i, neuron_times in enumerate(firing_times):
         numbers.append((i * np.ones(len(neuron_times))).astype(int))
 
-    Q = []
+    times_list = []
     for i, number_list in enumerate(numbers):
-        q = np.vstack([fns[i], numbers[i]]).T
-        Q.append(q)
-    Q = np.vstack(Q)
+        times_stack = np.vstack([firing_times[i], numbers[i]]).T
+        times_list.append(times_stack)
+    times_list = np.vstack(times_list)
 
-    Q = pd.DataFrame(Q)
-    Q = Q.sort_values(0)
-    Q = np.array(Q)
+    times_dataframe = pd.DataFrame(times_list)
+    times_dataframe = times_dataframe.sort_values(0)
+    times_dataframe = np.array(times_dataframe)
     
     final_times = []
-    for i, time in enumerate(Q):
-        final_times.append([Q[i][0], firing_neurons[int(Q[i][1])].name])
+    for i, time in enumerate(times_dataframe):
+        final_times.append([times_dataframe[i][0], firing_neurons[int(times_dataframe[i][1])].name])
         
     #
 
