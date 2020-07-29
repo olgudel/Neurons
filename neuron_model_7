@@ -203,6 +203,9 @@ class Neuron:
         self.firing_probability = 0
 
         self.vesicle_refill_time = np.random.uniform(8,14)*(1e-3)
+        
+        self.vesicle_timer_previous = 0
+        self.vesicle_timer_current = 0
 
         #
 #END NEW ATTRIBUTES
@@ -242,24 +245,29 @@ class Neuron:
                     self.AP_prob_function = partial(sigmoid, vth = self.vth)
 
 
-        #
-        
-        #        
-        pre_neuron.t_diff = pre_neuron.t_current - pre_neuron.t_previous
+        #Refill vesicles
+        pre_neuron.vesicle_timer_current = t_current      
+        pre_neuron.t_diff = pre_neuron.vesicle_timer_current - \
+                            pre_neuron.vesicle_timer_previous
         pre_neuron.refill_ratio = pre_neuron.t_diff / \
                                       pre_neuron.vesicle_refill_time
         pre_neuron.refill_ratio = np.clip(pre_neuron.refill_ratio, 0, 1)
+        pre_neuron.vesicles_refilled = np.random.binomial(pre_neuron.E,
+                                                    pre_neuron.refill_ratio)
+        pre_neuron.vesicle_refill_history.append(pre_neuron.vesicles_refilled)
+        
+        pre_neuron.E -= pre_neuron.vesicles_refilled
+        pre_neuron.vesicle_refill_time = np.random.uniform(8, 14) * (1e-3)
 
+        #Release vesicles
         pre_neuron.b = np.random.binomial(pre_neuron.M - pre_neuron.E,
                                           pre_neuron.pr)
         pre_neuron.b_history.append(pre_neuron.b)
-
         pre_neuron.E += pre_neuron.b
-        pre_neuron.vesicles_refilled = np.random.binomial(pre_neuron.E, 0.4)
-        pre_neuron.vesicle_refill_history.append(pre_neuron.vesicles_refilled)
-        pre_neuron.E -= pre_neuron.vesicles_refilled
-
         pre_neuron.E_history.append(pre_neuron.E)
+        pre_neuron.vesicle_timer_previous = pre_neuron.vesicle_timer_current
+
+        
 
 
         #If it's not an effect neuron, change the voltage
@@ -287,10 +295,11 @@ class Neuron:
                      label = 'Mean (ms) = {}'.format(np.around(np.mean(self.T_star),3)))
             plt.xlabel('k-th instance of T_star')
             plt.ylabel('Time (ms)')
-            plt.title('T_star: {}'.format(self.name))
+            plt.title('Time between action potentials (T_star) of neuron \"{}\"'.format(self.name))
             plt.legend()
             plt.show()
         return self.T_star
+    
     def get_firing_decision(self, percentage):
         self.firing_decision = np.random.uniform(0,1) <= percentage
 
@@ -808,19 +817,22 @@ def get_T_star(T_star_list):
     return T_star
 
 def sigmoid(v, y1=-13, y2=50, v0=0, vth=0.2):
-    if v >= vth:  #x2 is vth
+    if v >= vth:  
         return 1
     #MODIFY SIGMOIDAL FUNCTION
     m = (y2-y1) / (vth-v0)
     y = m*v - y2
     return 1/ (1 +np.exp(-y))
 
-##
-##a = np.linspace(0, 0.2, 1000)
-##
-##plt.plot(a,sigmoid(a))
-##plt.show()
 
+##a = np.linspace(0, 0.19999, 1000)
+##
+##plt.title('Sigmoid Plot')
+##plt.plot(a,sigmoid(a))
+##plt.xlabel('Membrane Potential')
+##plt.ylabel('Firing Probability')
+##plt.show()
+##
 
 def neuron_dict(**my_dict):
     """
@@ -934,7 +946,7 @@ def plot_firing_times(firing_neurons_list, firing_times_dict):
         else:
             ax[i].set_xticks([])
         ax[i].plot([3])
-        ax[i].set_title('{} = {}'.format(firing_neurons_list[i].name,
+        ax[i].set_title('Neuron \"{}\" fired {} times'.format(firing_neurons_list[i].name,
                         time_len))
 
     plt.show()
@@ -990,7 +1002,7 @@ def plot_voltage_vs_time(neuron, n_seconds):
 
     #Plot voltage history against time of voltage contributions
     plt.title('Voltage history: {}'.format(neuron.name))
-    plt.ylabel('Voltage (mV)')
+    plt.ylabel('Membrane voltage (mV)')
     plt.xlabel('Time (s)')
     plt.plot(neuron.voltage_time_history, neuron.voltage_history_2)
     
@@ -1180,24 +1192,38 @@ N_post_2 = Neuron(N_post_dict_2, n_tests)
 N_post_3 = Neuron(N_post_dict_3, n_tests) #Measuring neuron for N_post_2
 N_post_4 = Neuron(N_post_dict_4, n_tests)
 
-N_post_4.effects = {'vth': 0.10}
+##N_post_4.effects = {'vth': 0.10}
+##
+##c1 = [[N_ex, N_inh], [N_post]]
+##c2 = [[N_post], [N_post_2]]
+##c3 = [N_post_2, N_post_3]
+##c4 = [N_post_3, N_post_4]
+##c5 = [N_post_4, N_post_2]
+##
+##c6 = [N_ex_2, N_post_4]
+##
+##connections = [c1, c2, c3, c4, c5, c6]
+
+N_post_3.effects = {'vth': 0.10}
 
 c1 = [[N_ex, N_inh], [N_post]]
 c2 = [[N_post], [N_post_2]]
 c3 = [N_post_2, N_post_3]
-c4 = [N_post_3, N_post_4]
-c5 = [N_post_4, N_post_2]
+c4 = [N_post_3, N_post_2]
+c5 = [N_ex_2, N_post_3]
 
-c6 = [N_ex_2, N_post_4]
+connections = [c1, c2, c3, c4, c5]
 
-connections = [c1, c2, c3, c4, c5, c6]
+
+
+
 make_pre_post_connections(connections)
 
 
-n_seconds = 20
+n_seconds = 3
 
 
-full_neuron_list = [N_ex, N_inh, N_post, N_post_2, N_post_3, N_post_4, N_ex_2]
+full_neuron_list = [N_ex, N_inh, N_post, N_post_2, N_post_3, N_ex_2]
 
 firing_neurons_list  = [neuron for neuron in full_neuron_list \
                         if (neuron.firing_neuron  == True)]
@@ -1224,8 +1250,8 @@ for i in range(len(firing_times_names)):
 
 #Plotting Results
 
-##plot_firing_times(firing_neurons_list, firing_times_dict)
-##
+plot_firing_times(firing_neurons_list, firing_times_dict)
+
 
 N_post.get_T_star(plotting = True) #plotting = True plots T_star
 N_post_2.get_T_star(plotting=True)
@@ -1239,12 +1265,11 @@ N_post_2.get_T_star(plotting=True)
 plot_voltage_vs_time(N_post, n_seconds)
 plot_voltage_vs_time(N_post_2, n_seconds)
 plot_voltage_vs_time(N_post_3, n_seconds)
-plot_voltage_vs_time(N_post_4, n_seconds)
+
 
         
 plot_vesicles(N_ex)
 plot_vesicles(N_post)
 plot_vesicles(N_post_2)
 plot_vesicles(N_post_3)
-plot_vesicles(N_post_4)
 
