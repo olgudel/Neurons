@@ -238,11 +238,11 @@ class Neuron:
 ################################################################################
 #NEW METHODS  
     def add_voltage(self, pre_neuron):
-
+        
         if len(pre_neuron.effects) != 0:
-                for effect_name in pre_neuron.effects:
-                    self.__dict__[effect_name] = pre_neuron.effects[effect_name]
-                    self.AP_prob_function = partial(sigmoid, vth = self.vth)
+            for effect_name in pre_neuron.effects:
+                self.__dict__[effect_name] = pre_neuron.effects[effect_name]
+                self.AP_prob_function = partial(sigmoid, vth = self.vth)
 
 
         #Refill vesicles
@@ -554,15 +554,15 @@ def make_pre_post_connections(connection_list):
     """
     for i in range(len(connection_list)):
 
-        if (type(connection_list[i][0]) != list) and (type(connection_list[i][1]) \
-                                                      != list):
+        if (type(connection_list[i][0]) != list) and \
+           (type(connection_list[i][1]) != list):
                 pre_n = connection_list[i][0]
                 post_n = connection_list[i][1]
                 pre_n.add_post(post_n)
                 post_n.add_pre(pre_n)
                     
-        if (type(connection_list[i][0]) == list) and (type(connection_list[i][1]) \
-                                                      == list):
+        if (type(connection_list[i][0]) == list) and \
+           (type(connection_list[i][1]) == list):
             for j in range(len(connection_list[i][0])):
                 for k in range(len(connection_list[i][1])):
                     pre_n = connection_list[i][0][j]
@@ -570,16 +570,16 @@ def make_pre_post_connections(connection_list):
                     pre_n.add_post(post_n)
                     post_n.add_pre(pre_n)
                     
-        if (type(connection_list[i][0]) == list) and (type(connection_list[i][1]) \
-                                                      != list):
+        if (type(connection_list[i][0]) == list) and \
+           (type(connection_list[i][1]) != list):
             post_n = connection_list[i][1]
             for j in range(len(connection_list[i][0])):
                 pre_n = connection_list[i][0][j]
                 pre_n.add_post(post_n)
                 post_n.add_pre(pre_n)
                 
-        if (type(connection_list[i][0]) != list) and (type(connection_list[i][1]) \
-                                                      == list):
+        if (type(connection_list[i][0]) != list) and \
+           (type(connection_list[i][1]) == list):
             
             pre_n = connection_list[i][0]
             for j in range(len(connection_list[i][1])):
@@ -956,19 +956,31 @@ def plot_firing_times(firing_neurons_list, firing_times_dict):
         
 def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
 
+
     pre_neuron.t_current = t_current
 
     for post_neuron_name in post_neurons_dict.keys():
+
+
+              
         
         post_neuron = post_neurons_dict[post_neuron_name]
+
         post_neuron.outside_of_refractory_period = \
                                 (t_current - post_neuron.t_previous > \
                                  post_neuron.refractory_period )
-                    
-        if post_neuron.outside_of_refractory_period == True:
-            post_neuron.t_current = t_current
+       
+        refractory_condition = post_neuron.outside_of_refractory_period
+        effects_condition = False
 
-
+        #If the neuron is just an effect neuron.
+        if len(pre_neuron.effects) > 0:
+            effects_condition = \
+                    pre_neuron.effects['refractory_period_dependent'] == False
+            
+        if (refractory_condition == True) or \
+           (effects_condition == True):
+            post_neuron.t_current = t_current            
             post_neuron.add_voltage(pre_neuron)
             post_neuron.t_previous = t_current
             post_neuron.reduce_voltage(t_current)
@@ -988,11 +1000,14 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
                     post_neuron.AP_prob_function(post_neuron.current_voltage)
         post_neuron.get_firing_decision(post_neuron.firing_probability)
         
-        if (post_neuron.firing_decision == True) and \
-           (post_neuron.outside_of_refractory_period == True):
+        AP_condition = (post_neuron.firing_decision == True) and \
+           (post_neuron.outside_of_refractory_period == True)
+
+        if (AP_condition == True): 
             post_neuron.voltage_at_APs.append(post_neuron.current_voltage)
             post_neuron.current_voltage = 0
             post_neuron.AP_time_history.append(t_current)
+            
             update_voltages_and_times(post_neuron, post_neuron.post(),
                                       t_current)
 
@@ -1279,7 +1294,7 @@ def plot_vesicles(neuron):
 ###############################################################################                
 ###############################################################################
 #
-#                                New FEEDBACK Tests
+#                            SELF-FEEDBACK TESTS
 #
 ###############################################################################
 ###############################################################################
@@ -1329,10 +1344,10 @@ N_feedback = Neuron(N_feedback_dict, n_tests)
 
 
 
-N_feedback.effects = {'vth': 0.10}
+N_feedback.effects = {'vth': 0.10, 'refractory_period_dependent':False}
 
-c1 = [[N_ex, N_inh], [N_post, N_feedback]]
-c2 = [[N_post], [N_post_2]]
+c1 = [[N_ex, N_inh], N_post]
+c2 = [[N_post], [N_post_2, N_feedback]]
 c3 = [N_feedback, N_post]
 
 
@@ -1342,7 +1357,7 @@ connections = [c1, c2, c3]
 make_pre_post_connections(connections)
 
 
-n_seconds = 10
+n_seconds = 1
 
 
 full_neuron_list = [N_ex, N_inh, N_post, N_post_2, N_feedback]
@@ -1370,9 +1385,9 @@ for i in range(len(firing_times_names)):
 
 #Plotting Results
 
-plot_firing_times(firing_neurons_list, firing_times_dict)
+##plot_firing_times(firing_neurons_list, firing_times_dict)
 
-N_post.get_T_star(plotting = True) #plotting = True plots T_star
+##N_post.get_T_star(plotting = True) #plotting = True plots T_star
 
 #If bottom peaks go to 0, it means that a presynaptic neuron tried to
 #add voltage, but nothing happened because the neuron was within the
@@ -1381,8 +1396,7 @@ N_post.get_T_star(plotting = True) #plotting = True plots T_star
 
     
 plot_voltage_vs_time(N_post, n_seconds)
-plot_voltage_vs_time(N_post_2, n_seconds)
 plot_voltage_vs_time(N_feedback, n_seconds)
         
-plot_vesicles(N_ex)
-plot_vesicles(N_post)
+##plot_vesicles(N_ex)
+##plot_vesicles(N_post)
