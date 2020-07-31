@@ -63,6 +63,7 @@ import random
 import matplotlib.pyplot as plt
 from functools import partial
 import pandas as pd
+import seaborn as sns
 
 ###############################################################################
 ###############################################################################                
@@ -293,6 +294,8 @@ class Neuron:
             plt.plot(self.T_star, label = 'T_star')
             plt.plot(np.mean(self.T_star) * np.ones(len(self.T_star)),
                      label = 'Mean (ms) = {}'.format(np.around(np.mean(self.T_star),3)))
+            plt.plot([0], label = 'Std = {}'.format(\
+                np.around(np.std(self.T_star),2)))
             plt.xlabel('k-th instance of T_star')
             plt.ylabel('Time (ms)')
             plt.title('Time between action potentials (T_star) of neuron \"{}\"'.format(self.name))
@@ -1420,7 +1423,6 @@ template_names = ['name', 'n_type', 'M', 'E', 'k',
 
 template_args = make_template(template_names)
 
-
 N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 100, E = 50, pr = 0.6,
                         kv = 0.02, AP_prob_function = sigmoid)
 N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v',M = 100, E = 50, pr = 0.3,
@@ -1429,15 +1431,13 @@ N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v',M = 100, E = 50, pr = 0.3
 N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
                           kv = 0.02, AP_prob_function = sigmoid,
                           refractory_period = 0.001)
+
 N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
                             pr = 0.3, AP_prob_function = sigmoid,
                             refractory_period = 0.001)
 
 #MUST ATTACH A NEURON TO THE END OF ANY NEURON YOU WANT TO MEASURE VESICLES OF.
 #3 is connected after 2 so you can measure 2.  It's a measuring neuron
-N_feedback_dict = neuron_dict(name = 'N_feedback', n_type = 'ex', M = 10, E = 5,
-                          pr = 0.6, kv = 0.02, AP_per_second = 1,
-                          AP_prob_function = sigmoid)
 
 args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
 neuron_args_check(args_dict_list, template_args)
@@ -1460,7 +1460,7 @@ connections = [c1, c2]
 make_pre_post_connections(connections)
 
 
-n_seconds = 20
+n_seconds = 60
 
 
 full_neuron_list = [N_ex, N_inh, N_post, N_post_2]
@@ -1500,6 +1500,9 @@ N_post.get_T_star(plotting = True) #plotting = True plots T_star
     
 plot_voltage_vs_time(N_post, n_seconds)
 plot_voltage_vs_time(N_post_2, n_seconds)
+
+sns.distplot(N_post.T_star)
+plt.show()
         
 ##plot_vesicles(N_ex)
 ##plot_vesicles(N_post)
