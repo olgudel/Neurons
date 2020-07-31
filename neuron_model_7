@@ -1301,18 +1301,129 @@ def plot_vesicles(neuron):
 ###############################################################################
 
 
+##n_tests = 1000 #means 1000 ms which is 1 second, 100000 means us
+##
+##template_names = ['name', 'n_type', 'M', 'E', 'k',
+##                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'AP_per_second',
+##                  'AP_length','refractory_period', 'A','tau','AP_prob_function',
+##                  'other']
+##template_args = make_template(template_names)
+##
+##
+##N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5, pr = 0.6,
+##                        kv = 0.02, AP_prob_function = sigmoid)
+##N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v',M = 10, E = 5, pr = 0.3,
+##                         A = 1, AP_prob_function = sigmoid, kv = -0.02)
+##
+##N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
+##                          kv = 0.02, AP_prob_function = sigmoid,
+##                          refractory_period = 0.001)
+##N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
+##                            pr = 0.3, AP_prob_function = sigmoid,
+##                            refractory_period = 0.001)
+##
+###MUST ATTACH A NEURON TO THE END OF ANY NEURON YOU WANT TO MEASURE VESICLES OF.
+###3 is connected after 2 so you can measure 2.  It's a measuring neuron
+##N_feedback_dict = neuron_dict(name = 'N_feedback', n_type = 'ex', M = 10, E = 5,
+##                          pr = 0.6, kv = 0.02, AP_per_second = 1,
+##                          AP_prob_function = sigmoid)
+##
+##args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2,
+##                  N_feedback_dict]
+##neuron_args_check(args_dict_list, template_args)
+##
+##N_ex = Neuron(N_ex_dict, n_tests)
+##N_inh = Neuron(N_inh_dict, n_tests)
+##
+##N_ex.firing_neuron = True
+##N_inh.firing_neuron = True
+##
+##N_post = Neuron(N_post_dict, n_tests)
+##N_post_2 = Neuron(N_post_dict_2, n_tests)
+##N_feedback = Neuron(N_feedback_dict, n_tests)
+##
+##
+##
+##N_feedback.effects = {'vth': 0.10, 'refractory_period_dependent':False}
+##
+##c1 = [[N_ex, N_inh], N_post]
+##c2 = [[N_post], [N_post_2, N_feedback]]
+##c3 = [N_feedback, N_post]
+##
+##
+##connections = [c1, c2, c3]
+##
+##
+##make_pre_post_connections(connections)
+##
+##
+##n_seconds = 1
+##
+##
+##full_neuron_list = [N_ex, N_inh, N_post, N_post_2, N_feedback]
+##
+##firing_neurons_list  = [neuron for neuron in full_neuron_list \
+##                        if (neuron.firing_neuron  == True)]
+##firing_neurons_dict = {neuron.name:neuron for neuron in firing_neurons_list}
+##firing_times_names = generate_AP_times_and_reactions(firing_neurons_list,
+##                                                     n_seconds)
+##firing_times_dict = get_firing_times_dict(firing_times_names)
+##
+###Main test
+##
+##for i in range(len(firing_times_names)):
+##
+##    t_current = firing_times_names[i][0]
+##        
+##    firing_neuron_name = firing_times_names[i][1]
+##    firing_neuron = firing_neurons_dict[firing_neuron_name]
+##    post_neurons_dict = firing_neurons_dict[firing_neuron_name].post()
+##    
+##    update_voltages_and_times(firing_neuron, post_neurons_dict, t_current)
+##
+##
+##
+###Plotting Results
+##
+####plot_firing_times(firing_neurons_list, firing_times_dict)
+##
+####N_post.get_T_star(plotting = True) #plotting = True plots T_star
+##
+###If bottom peaks go to 0, it means that a presynaptic neuron tried to
+###add voltage, but nothing happened because the neuron was within the
+###refractory period.
+##
+##
+##    
+##plot_voltage_vs_time(N_post, n_seconds)
+##plot_voltage_vs_time(N_feedback, n_seconds)
+##        
+####plot_vesicles(N_ex)
+####plot_vesicles(N_post)
+##
+###############################################################################
+###############################################################################                
+###############################################################################
+#
+#                            CHANGE VARIABLES - NO FEEDBACK
+#
+###############################################################################
+###############################################################################
+###############################################################################
+
 n_tests = 1000 #means 1000 ms which is 1 second, 100000 means us
 
 template_names = ['name', 'n_type', 'M', 'E', 'k',
                   'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'AP_per_second',
                   'AP_length','refractory_period', 'A','tau','AP_prob_function',
                   'other']
+
 template_args = make_template(template_names)
 
 
-N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5, pr = 0.6,
+N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 100, E = 50, pr = 0.6,
                         kv = 0.02, AP_prob_function = sigmoid)
-N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v',M = 10, E = 5, pr = 0.3,
+N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v',M = 100, E = 50, pr = 0.3,
                          A = 1, AP_prob_function = sigmoid, kv = -0.02)
 
 N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
@@ -1328,8 +1439,7 @@ N_feedback_dict = neuron_dict(name = 'N_feedback', n_type = 'ex', M = 10, E = 5,
                           pr = 0.6, kv = 0.02, AP_per_second = 1,
                           AP_prob_function = sigmoid)
 
-args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2,
-                  N_feedback_dict]
+args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
 neuron_args_check(args_dict_list, template_args)
 
 N_ex = Neuron(N_ex_dict, n_tests)
@@ -1340,27 +1450,20 @@ N_inh.firing_neuron = True
 
 N_post = Neuron(N_post_dict, n_tests)
 N_post_2 = Neuron(N_post_dict_2, n_tests)
-N_feedback = Neuron(N_feedback_dict, n_tests)
-
-
-
-N_feedback.effects = {'vth': 0.10, 'refractory_period_dependent':False}
 
 c1 = [[N_ex, N_inh], N_post]
-c2 = [[N_post], [N_post_2, N_feedback]]
-c3 = [N_feedback, N_post]
+c2 = [N_post, N_post_2]
 
-
-connections = [c1, c2, c3]
+connections = [c1, c2]
 
 
 make_pre_post_connections(connections)
 
 
-n_seconds = 1
+n_seconds = 20
 
 
-full_neuron_list = [N_ex, N_inh, N_post, N_post_2, N_feedback]
+full_neuron_list = [N_ex, N_inh, N_post, N_post_2]
 
 firing_neurons_list  = [neuron for neuron in full_neuron_list \
                         if (neuron.firing_neuron  == True)]
@@ -1387,7 +1490,7 @@ for i in range(len(firing_times_names)):
 
 ##plot_firing_times(firing_neurons_list, firing_times_dict)
 
-##N_post.get_T_star(plotting = True) #plotting = True plots T_star
+N_post.get_T_star(plotting = True) #plotting = True plots T_star
 
 #If bottom peaks go to 0, it means that a presynaptic neuron tried to
 #add voltage, but nothing happened because the neuron was within the
@@ -1396,7 +1499,9 @@ for i in range(len(firing_times_names)):
 
     
 plot_voltage_vs_time(N_post, n_seconds)
-plot_voltage_vs_time(N_feedback, n_seconds)
+plot_voltage_vs_time(N_post_2, n_seconds)
         
 ##plot_vesicles(N_ex)
 ##plot_vesicles(N_post)
+
+
