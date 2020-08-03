@@ -1683,7 +1683,8 @@ def plot_vesicles(neuron):
 ###############################################################################
 ###############################################################################
 
-def run_2(test_args1, test_args2, k1, k2):
+def run_2(test_args1, test_args2, k1, k2, address):
+    os.chdir(address)
     n_tests = 1000 #means 1000 ms which is 1 second, 100000 means us
 
     template_names = ['name', 'n_type', 'M', 'E', 'k',
@@ -1782,13 +1783,17 @@ def run_2(test_args1, test_args2, k1, k2):
     ##sns.distplot(N_post.T_star, bins = 100)
     ##plt.show()
 
-    plt.hist(N_post.T_star, bins = 100)
-    plt.title('Histogram of inter-firing time intervals: \n{}={}, \n{}={}'.format(
-        test_args1['arg'], test_args1['values'][k1],
-        test_args2['arg'],test_args2['values'][k2]))
+    label_text = ' \n{}, {}={}, \n{}, {}={}\n Mean={}, CV={}'.format(
+        test_args1['name'],test_args1['arg'], np.around(test_args1['values'][k1],2),
+        test_args2['name'],test_args2['arg'],np.around(test_args2['values'][k2],2),
+              np.around(np.mean(N_post.T_star),2), np.around(np.std(N_post.T_star)/np.mean(N_post.T_star), 2))
+
+    plt.hist(N_post.T_star, bins = 100, label = label_text)
+    plt.title('Histogram of inter-firing time intervals')
     
     plt.xlabel('Time (ms)')
     plt.ylabel('Counts')
+    plt.legend()
     
     plt.savefig('tstar_{}_{}_{}_{}_{}_{}'.format(test_args1['name'], test_args1['arg'],
                                            test_args2['name'], test_args2['arg'],
@@ -1801,21 +1806,22 @@ def run_2(test_args1, test_args2, k1, k2):
     ##plot_vesicles(N_post)
     ##
 
-os.chdir(r'C:\Users\Oliver\Desktop\UDEL Work\Internship - Summer 2020 - Singh\Test Figures')
 
-#pr tests
+##pr tests
 
-##N_tests = 10
-##test_args1 = {'name':'ex', 'arg':'pr', 'values':np.linspace(0.01, 0.99,
-##                                                            N_tests)}
-##test_args2 = {'name':'inh', 'arg':'pr', 'values':np.linspace(0.01, 0.99,
-##                                                             N_tests)}
-##for k1 in range(N_tests):
-##    for k2 in range(N_tests):
-##        run_2(test_args1, test_args2, k1, k2)
+address_pr = r'C:\Users\Oliver\Desktop\UDEL Work\Internship - Summer 2020 - Singh\Test Figures\pr'
+N_tests = 10
+test_args1 = {'name':'ex', 'arg':'pr', 'values':np.linspace(0.01, 0.99,
+                                                            N_tests)}
+test_args2 = {'name':'inh', 'arg':'pr', 'values':np.linspace(0.01, 0.99,
+                                                             N_tests)}
+for k1 in range(N_tests):
+    for k2 in range(N_tests):
+        run_2(test_args1, test_args2, k1, k2, address_pr)
 
-#APs_per_second tests
-os.chdir(r'C:\Users\Oliver\Desktop\UDEL Work\Internship - Summer 2020 - Singh\Test Figures\AP_per_second')
+##APs_per_second tests
+
+address_AP_per_second = r'C:\Users\Oliver\Desktop\UDEL Work\Internship - Summer 2020 - Singh\Test Figures\AP_per_second'
 
 values1 =[200]
 values2 = range(10, 800, 10)
@@ -1826,8 +1832,7 @@ test_args1 = {'name':'ex', 'arg':'AP_per_second', 'values':values1}
 test_args2 = {'name':'inh', 'arg':'AP_per_second', 'values':values2}
 for k1 in range(N_tests_1):
     for k2 in range(N_tests_2):
-        run_2(test_args1, test_args2, k1, k2)
+        run_2(test_args1, test_args2, k1, k2, address_AP_per_second)
 
 
 
- 
