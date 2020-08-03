@@ -1788,7 +1788,7 @@ def run_2(test_args1, test_args2, k1, k2, address):
         test_args2['name'],test_args2['arg'],np.around(test_args2['values'][k2],2),
               np.around(np.mean(N_post.T_star),2), np.around(np.std(N_post.T_star)/np.mean(N_post.T_star), 2))
 
-    plt.hist(N_post.T_star, bins = 100, label = label_text)
+    plt.hist(N_post.T_star, label = label_text, bins = 200)
     plt.title('Histogram of inter-firing time intervals')
     
     plt.xlabel('Time (ms)')
@@ -1823,8 +1823,8 @@ for k1 in range(N_tests):
 
 address_AP_per_second = r'C:\Users\Oliver\Desktop\UDEL Work\Internship - Summer 2020 - Singh\Test Figures\AP_per_second'
 
-values1 =[200]
-values2 = range(10, 800, 10)
+values1 = np.linspace(1, 20, 20).astype(int)
+values2 = np.linspace(1, 20, 20).astype(int)
 N_tests_1 = len(values1)
 N_tests_2 = len(values2)
 
@@ -1835,4 +1835,48 @@ for k1 in range(N_tests_1):
         run_2(test_args1, test_args2, k1, k2, address_AP_per_second)
 
 
+##Tau tests
 
+address_tau = r'C:\Users\Oliver\Desktop\UDEL Work\Internship - Summer 2020 - Singh\Test Figures\tau'
+
+values1 = np.linspace(0.001, 10, 20)
+values2 = np.linspace(0.001, 10, 20)
+N_tests_1 = len(values1)
+N_tests_2 = len(values2)
+
+test_args1 = {'name':'ex', 'arg':'tau', 'values':values1}
+test_args2 = {'name':'inh', 'arg':'tau', 'values':values2}
+for k1 in range(N_tests_1):
+    for k2 in range(N_tests_2):
+        run_2(test_args1, test_args2, k1, k2, address_tau)
+
+##kv tests
+
+address_kv = r'C:\Users\Oliver\Desktop\UDEL Work\Internship - Summer 2020 - Singh\Test Figures\kv'
+
+values1 = np.linspace(0.001, 0.1, 10)
+values2 = np.linspace(-0.001, -0.1, 10)
+N_tests_1 = len(values1)
+N_tests_2 = len(values2)
+
+test_args1 = {'name':'ex', 'arg':'kv', 'values':values1}
+test_args2 = {'name':'inh', 'arg':'kv', 'values':values2}
+for k1 in range(N_tests_1):
+    for k2 in range(N_tests_2):
+        run_2(test_args1, test_args2, k1, k2, address_kv)
+
+
+##M tests
+
+address_M = r'C:\Users\Oliver\Desktop\UDEL Work\Internship - Summer 2020 - Singh\Test Figures\M'
+
+values1 = range(10, 110, 10)
+values2 = range(10, 110, 10)
+N_tests_1 = len(values1)
+N_tests_2 = len(values2)
+
+test_args1 = {'name':'ex', 'arg':'kv', 'values':values1}
+test_args2 = {'name':'inh', 'arg':'kv', 'values':values2}
+for k1 in range(N_tests_1):
+    for k2 in range(N_tests_2):
+        run_2(test_args1, test_args2, k1, k2, address_M)
