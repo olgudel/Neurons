@@ -1715,6 +1715,8 @@ def run_2(test_args1, test_args2, k1, k2, address, save_figs = True, N_post_args
 
     for key in N_post_args.keys():
         N_post_dict[key] = N_post_args[key]
+        if key == 'vth':
+            N_post_dict['AP_prob_function'] = partial(sigmoid, vth = N_post_args[key])
 ##        print(N_post_dict[key])
         
 
@@ -1941,11 +1943,11 @@ def run_2(test_args1, test_args2, k1, k2, address, save_figs = True, N_post_args
 address_tau = r'C:\Users\Oliver\Desktop\UDEL Work\Internship - Summer 2020 - Singh\Test Figures\tau'
 
 values1 = [10]
-values2 = [10]
+values2 = 40 * [10]
 N_tests_1 = len(values1)
 N_tests_2 = len(values2)
 
-post_tau_values = np.linspace(0.001, 10, 20)
+post_tau_values = np.linspace(0.0001, 10, 40)
 N_post_args = [{'tau':value} for value in post_tau_values]
 
 test_args1 = {'name':'ex', 'arg':'tau', 'values':values1}
@@ -1955,7 +1957,7 @@ mean_array = np.zeros(len(N_post_args))
 cv_array = np.zeros(len(N_post_args))
 
 for k in range(len(N_post_args)):
-        mean, cv = run_2(test_args1, test_args2, 0, 0,
+        mean, cv = run_2(test_args1, test_args2, 0, k,
                     address_tau, save_figs = True, N_post_args = N_post_args[k])
         mean_array[k] = mean
         cv_array[k] = cv
@@ -1972,7 +1974,7 @@ cv_array = np.array((pd.DataFrame(cv_array)).fillna(0))
 plt.plot(np.clip(mean_array, 0, 200))
 plt.title('Mean inter-firing intervals varying tau')
 
-plt.xticks(range(len(N_post_args)), post_tau_values)
+plt.xticks(range(len(N_post_args)), np.around(post_tau_values,2))
 #plt.yticks(range(len(test_args2['values'])), np.around(test_args2['values'],3))
 plt.show()
 
@@ -2057,3 +2059,106 @@ plt.show()
 ##N_post_args = get_dict(refractory_period = 0.003)
 ##N_post = run_2(test_args1, test_args2, k1=0, k2=0, address = None, save_figs = False,
 ##      N_post_args = N_post_args)
+
+##refractory_period tests
+
+##address_ref_per = r'C:\Users\Oliver\Desktop\UDEL Work\Internship - Summer 2020 - Singh\Test Figures\refractory_period'
+##
+##values1 = [10]
+##values2 = 40*[10]
+##N_tests_1 = len(values1)
+##N_tests_2 = len(values2)
+##
+##refractory_period_values = np.linspace(0.00005, 0.01 , 40)
+##N_post_args = [{'refractory_period':value} for value in refractory_period_values]
+##
+##test_args1 = {'name':'ex', 'arg':'tau', 'values':values1}
+##test_args2 = {'name':'inh', 'arg':'tau', 'values':values2}
+##
+##mean_array = np.zeros(len(N_post_args))
+##cv_array = np.zeros(len(N_post_args))
+##
+##for k in range(len(N_post_args)):
+##        mean, cv = run_2(test_args1, test_args2, 0, k,
+##                    address_ref_per, save_figs = True, N_post_args = N_post_args[k])
+##        mean_array[k] = mean
+##        cv_array[k] = cv
+##
+##
+##mean_array = np.array((pd.DataFrame(mean_array)).fillna(0))
+##cv_array = np.array((pd.DataFrame(cv_array)).fillna(0))
+##
+####mean2 = mean_array.copy()
+####for i in range(len(mean2)):
+####    mean2[i,i] = 0
+##    
+###Plot mean_array    
+##plt.plot(np.clip(mean_array, 0, 200))
+##plt.title('Mean inter-firing intervals varying refractory_period')
+##plt.xlabel('5 us to 10 ms in 40 increments')
+##plt.ylabel('Time (ms)')
+####plt.xticks(range(len(N_post_args)), refractory_period_values)
+####plt.yticks(range(len(test_args2['values'])), np.around(test_args2['values'],3))
+##plt.show()
+##
+###Plot cv_array
+##plt.plot(cv_array)
+##plt.title('CV inter-firing intervals varying refractory_period')
+##plt.xlabel('5 us to 10 ms in 40 increments')
+##plt.ylabel('Time (ms)')
+####plt.xticks(range(len(refractory_period_values)),
+####           np.around(10000*refractory_period_values, 0))
+####plt.yticks(range(len(test_args2['values'])), np.around(test_args2['values'],3))
+##plt.show()
+
+####Vary vth
+##
+##address_vth = r'C:\Users\Oliver\Desktop\UDEL Work\Internship - Summer 2020 - Singh\Test Figures\vth'
+##
+##values1 = [10]
+##values2 = 40*[10]
+##N_tests_1 = len(values1)
+##N_tests_2 = len(values2)
+##
+##vth_values = np.linspace(0.01, 1, 40)
+##N_post_args = [{'vth':value} for value in vth_values]
+##
+##test_args1 = {'name':'ex', 'arg':'tau', 'values':values1}
+##test_args2 = {'name':'inh', 'arg':'tau', 'values':values2}
+##
+##mean_array = np.zeros(len(N_post_args))
+##cv_array = np.zeros(len(N_post_args))
+##
+##for k in range(len(N_post_args)):
+##        mean, cv = run_2(test_args1, test_args2, 0, k,
+##                    address_vth, save_figs = True, N_post_args = N_post_args[k])
+##        mean_array[k] = mean
+##        cv_array[k] = cv
+##
+##
+##mean_array = np.array((pd.DataFrame(mean_array)).fillna(0))
+##cv_array = np.array((pd.DataFrame(cv_array)).fillna(0))
+##
+####mean2 = mean_array.copy()
+####for i in range(len(mean2)):
+####    mean2[i,i] = 0
+##    
+###Plot mean_array    
+##plt.plot(np.clip(mean_array, 0, 200))
+##plt.title('Mean inter-firing intervals varying vth')
+##plt.xlabel('0.01 to 1 volts in 40 increments')
+##plt.ylabel('Time (ms)')
+####plt.xticks(range(len(N_post_args)), np.around(vth_values, 2))
+####plt.yticks(range(len(test_args2['values'])), np.around(test_args2['values'],3))
+##plt.show()
+##
+###Plot cv_array
+##plt.plot(cv_array)
+##plt.title('CV inter-firing intervals varying vth')
+##plt.xlabel('0.01 to 1 volts in 40 increments')
+##plt.ylabel('Time (ms)')
+####plt.xticks(range(len(N_post_args)), np.around(vth_values, 2))
+####plt.yticks(range(len(test_args2['values'])), np.around(test_args2['values'],3))
+##plt.show()
+
+
