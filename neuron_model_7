@@ -853,7 +853,7 @@ def neuron_dict(**my_dict):
                         k = 1, pr = 0.5, f = 1, v0 = 0,
                        vth = 0.2, tv = 10, kv = 0.01, AP_length = 100,
                        AP_per_second=200, refractory_period = 0.002, A= 1,
-                       tau = 10, AP_prob_function = sigmoid, other = None)
+                       tau = 20, AP_prob_function = sigmoid, other = None)
     
     for name in my_dict.keys():
         if name not in template_dict.keys():
@@ -985,12 +985,12 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
             effects_condition = \
                     pre_neuron.effects['refractory_period_dependent'] == False
             
-        if (refractory_condition == True) or \
-           (effects_condition == True):
-            post_neuron.t_current = t_current            
-            post_neuron.add_voltage(pre_neuron, t_current)
-            post_neuron.t_previous = t_current
-            post_neuron.reduce_voltage(t_current)
+##        if (refractory_condition == True) or \
+##           (effects_condition == True):
+        post_neuron.t_current = t_current            
+        post_neuron.add_voltage(pre_neuron, t_current)
+        post_neuron.t_previous = t_current
+        post_neuron.reduce_voltage(t_current)
 
     pre_neuron.t_previous = t_current            
     
@@ -1006,11 +1006,13 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
         post_neuron.firing_probability = \
                     post_neuron.AP_prob_function(post_neuron.current_voltage)
         post_neuron.get_firing_decision(post_neuron.firing_probability)
-        
-        AP_condition = (post_neuron.firing_decision == True) and \
-           (post_neuron.outside_of_refractory_period == True)
 
-        if (AP_condition == True): 
+        firing_condition = post_neuron.firing_decision
+        refractory_condition = post_neuron.outside_of_refractory_period
+        
+           
+
+        if ((firing_condition and refractory_condition) == True): 
             post_neuron.voltage_at_APs.append(post_neuron.current_voltage)
             post_neuron.current_voltage = 0
             post_neuron.AP_time_history.append(t_current)
@@ -1683,152 +1685,152 @@ def plot_vesicles(neuron):
 ###############################################################################
 ###############################################################################
 
-def run_2(test_args1, test_args2, k1, k2, address, save_figs = True, N_post_args = {}):
-    if save_figs == True:
-        os.chdir(address)
-    n_tests = 1000 #means 1000 ms which is 1 second, 100000 means us
-
-    template_names = ['name', 'n_type', 'M', 'E', 'k',
-                      'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'AP_per_second',
-                      'AP_length','refractory_period', 'A','tau','AP_prob_function',
-                      'other']
-
-    template_args = make_template(template_names)
-
-
-    N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5,
-                            pr = 0.8, kv = 0.01, AP_prob_function = sigmoid,
-                            AP_per_second = 200)
-    N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v', M = 10, E = 5,
-                             pr = 0.2, AP_prob_function = sigmoid,
-                             kv = -0.01, AP_per_second = 200)
-
-
-    N_ex_dict[test_args1['arg']] = test_args1['values'][k1]
-    N_inh_dict[test_args2['arg']] = test_args2['values'][k2]
-
-
-
-    N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
-                              kv = 0.02, AP_prob_function = sigmoid,
-                              refractory_period = 0.001)
-
-    for key in N_post_args.keys():
-        N_post_dict[key] = N_post_args[key]
-        if key == 'vth':
-            N_post_dict['AP_prob_function'] = partial(sigmoid, vth = N_post_args[key])
-##        print(N_post_dict[key])
-        
-
-    N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
-                                pr = 0.3, AP_prob_function = sigmoid,
-                                refractory_period = 0.001)
-
-    ##MUST ATTACH A NEURON TO THE END OF ANY NEURON YOU WANT TO MEASURE VESICLES OF.
-    ##3 is connected after 2 so you can measure 2.  It's a measuring neuron
-
-    args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
-    neuron_args_check(args_dict_list, template_args)
-
-    N_ex = Neuron(N_ex_dict, n_tests)
-    N_inh = Neuron(N_inh_dict, n_tests)
-
-    N_ex.firing_neuron = True
-    N_inh.firing_neuron = True
-
-    N_post = Neuron(N_post_dict, n_tests)
-    N_post_2 = Neuron(N_post_dict_2, n_tests)
-
-    c1 = [[N_ex, N_inh], N_post]
-    c2 = [N_post, N_post_2]
-
-    connections = [c1, c2]
-
-
-    make_pre_post_connections(connections)
-
-    n_seconds = 60 * 1 #60 seconds times 1 min/s
-
-
-    full_neuron_list = [N_ex, N_inh, N_post, N_post_2]
-
-    firing_neurons_list  = [neuron for neuron in full_neuron_list \
-                            if (neuron.firing_neuron  == True)]
-    firing_neurons_dict = {neuron.name:neuron for neuron in firing_neurons_list}
-    firing_times_names = generate_AP_times_and_reactions(firing_neurons_list,
-                                                         n_seconds)
-    firing_times_dict = get_firing_times_dict(firing_times_names)
-
-    ##Main test
-
-    for i in range(len(firing_times_names)):
-
-        t_current = firing_times_names[i][0]
-            
-        firing_neuron_name = firing_times_names[i][1]
-        firing_neuron = firing_neurons_dict[firing_neuron_name]
-        post_neurons_dict = firing_neurons_dict[firing_neuron_name].post()
-        
-        update_voltages_and_times(firing_neuron, post_neurons_dict, t_current)
-
-        #perform function
-        print('\r{}%'.format(i * 100 / len(firing_times_names)), end='')
-        sys.stdout.flush()
-
-    ##Plotting Results
-
-    ##plot_firing_times(firing_neurons_list, firing_times_dict)
-
-    N_post.get_T_star(plotting = False) #plotting = True plots T_star
-
-    ##If bottom peaks go to 0, it means that a presynaptic neuron tried to
-    ##add voltage, but nothing happened because the neuron was within the
-    ##refractory period.
-
-    ##plot_voltage_vs_time(N_post, n_seconds)
-    ##plot_voltage_vs_time(N_post_2, n_seconds)
-
-    ##sns.distplot(N_post.T_star, bins = 100)
-    ##plt.show()
-
-
-
-    label_text = ' \n{}, {}={}, \n{}, {}={}\n Mean={}, CV={} \nN_post = {}'.format(
-        test_args1['name'],test_args1['arg'], np.around(test_args1['values'][k1],2),
-        test_args2['name'],test_args2['arg'],np.around(test_args2['values'][k2],2),
-              np.around(np.mean(N_post.T_star),2),
-        np.around(np.std(N_post.T_star)/np.mean(N_post.T_star), 2),
-        N_post_args)
-
-    plt.hist(N_post.T_star, label = label_text, bins = 200)
-    plt.title('Histogram of inter-firing time intervals')
-    
-    plt.xlabel('Time (ms)')
-    plt.ylabel('Counts')
-    plt.legend()
-
-    if (save_figs == True) or (save_figs == 'array'):
-        
-        plt.savefig('tstar_{}_{}_{}_{}_{}_{}'.format(test_args1['name'], test_args1['arg'],
-                                               test_args2['name'], test_args2['arg'],
-                                               k1, k2))
-        print('Saved fig: {}, {}'.format(k1, k2))
-        plt.close()
-    else:
-        plt.show()
-
-
-    if (save_figs == 'array') or (save_figs == True):
-        mean = np.around(np.mean(N_post.T_star),2)
-        cv = np.around(np.std(N_post.T_star)/np.mean(N_post.T_star), 2)
-        return mean,cv
-##    plt.show()
-
-    ##return N_post
-            
-    ##plot_vesicles(N_ex)
-    ##plot_vesicles(N_post)
-    ##
+##def run_2(test_args1, test_args2, k1, k2, address, save_figs = True, N_post_args = {}):
+##    if save_figs == True:
+##        os.chdir(address)
+##    n_tests = 1000 #means 1000 ms which is 1 second, 100000 means us
+##
+##    template_names = ['name', 'n_type', 'M', 'E', 'k',
+##                      'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'AP_per_second',
+##                      'AP_length','refractory_period', 'A','tau','AP_prob_function',
+##                      'other']
+##
+##    template_args = make_template(template_names)
+##
+##
+##    N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5,
+##                            pr = 0.8, kv = 0.01, AP_prob_function = sigmoid,
+##                            AP_per_second = 200)
+##    N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v', M = 10, E = 5,
+##                             pr = 0.2, AP_prob_function = sigmoid,
+##                             kv = -0.01, AP_per_second = 200)
+##
+##
+##    N_ex_dict[test_args1['arg']] = test_args1['values'][k1]
+##    N_inh_dict[test_args2['arg']] = test_args2['values'][k2]
+##
+##
+##
+##    N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
+##                              kv = 0.02, AP_prob_function = sigmoid,
+##                              refractory_period = 0.001)
+##
+##    for key in N_post_args.keys():
+##        N_post_dict[key] = N_post_args[key]
+##        if key == 'vth':
+##            N_post_dict['AP_prob_function'] = partial(sigmoid, vth = N_post_args[key])
+####        print(N_post_dict[key])
+##        
+##
+##    N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
+##                                pr = 0.3, AP_prob_function = sigmoid,
+##                                refractory_period = 0.001)
+##
+##    ##MUST ATTACH A NEURON TO THE END OF ANY NEURON YOU WANT TO MEASURE VESICLES OF.
+##    ##3 is connected after 2 so you can measure 2.  It's a measuring neuron
+##
+##    args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict, N_post_dict_2]
+##    neuron_args_check(args_dict_list, template_args)
+##
+##    N_ex = Neuron(N_ex_dict, n_tests)
+##    N_inh = Neuron(N_inh_dict, n_tests)
+##
+##    N_ex.firing_neuron = True
+##    N_inh.firing_neuron = True
+##
+##    N_post = Neuron(N_post_dict, n_tests)
+##    N_post_2 = Neuron(N_post_dict_2, n_tests)
+##
+##    c1 = [[N_ex, N_inh], N_post]
+##    c2 = [N_post, N_post_2]
+##
+##    connections = [c1, c2]
+##
+##
+##    make_pre_post_connections(connections)
+##
+##    n_seconds = 60 * 1 #60 seconds times 1 min/s
+##
+##
+##    full_neuron_list = [N_ex, N_inh, N_post, N_post_2]
+##
+##    firing_neurons_list  = [neuron for neuron in full_neuron_list \
+##                            if (neuron.firing_neuron  == True)]
+##    firing_neurons_dict = {neuron.name:neuron for neuron in firing_neurons_list}
+##    firing_times_names = generate_AP_times_and_reactions(firing_neurons_list,
+##                                                         n_seconds)
+##    firing_times_dict = get_firing_times_dict(firing_times_names)
+##
+##    ##Main test
+##
+##    for i in range(len(firing_times_names)):
+##
+##        t_current = firing_times_names[i][0]
+##            
+##        firing_neuron_name = firing_times_names[i][1]
+##        firing_neuron = firing_neurons_dict[firing_neuron_name]
+##        post_neurons_dict = firing_neurons_dict[firing_neuron_name].post()
+##        
+##        update_voltages_and_times(firing_neuron, post_neurons_dict, t_current)
+##
+##        #perform function
+##        print('\r{}%'.format(i * 100 / len(firing_times_names)), end='')
+##        sys.stdout.flush()
+##
+##    ##Plotting Results
+##
+##    ##plot_firing_times(firing_neurons_list, firing_times_dict)
+##
+##    N_post.get_T_star(plotting = False) #plotting = True plots T_star
+##
+##    ##If bottom peaks go to 0, it means that a presynaptic neuron tried to
+##    ##add voltage, but nothing happened because the neuron was within the
+##    ##refractory period.
+##
+##    ##plot_voltage_vs_time(N_post, n_seconds)
+##    ##plot_voltage_vs_time(N_post_2, n_seconds)
+##
+##    ##sns.distplot(N_post.T_star, bins = 100)
+##    ##plt.show()
+##
+##
+##
+##    label_text = ' \n{}, {}={}, \n{}, {}={}\n Mean={}, CV={} \nN_post = {}'.format(
+##        test_args1['name'],test_args1['arg'], np.around(test_args1['values'][k1],2),
+##        test_args2['name'],test_args2['arg'],np.around(test_args2['values'][k2],2),
+##              np.around(np.mean(N_post.T_star),2),
+##        np.around(np.std(N_post.T_star)/np.mean(N_post.T_star), 2),
+##        N_post_args)
+##
+##    plt.hist(N_post.T_star, label = label_text, bins = 200)
+##    plt.title('Histogram of inter-firing time intervals')
+##    
+##    plt.xlabel('Time (ms)')
+##    plt.ylabel('Counts')
+##    plt.legend()
+##
+##    if (save_figs == True) or (save_figs == 'array'):
+##        
+##        plt.savefig('tstar_{}_{}_{}_{}_{}_{}'.format(test_args1['name'], test_args1['arg'],
+##                                               test_args2['name'], test_args2['arg'],
+##                                               k1, k2))
+##        print('Saved fig: {}, {}'.format(k1, k2))
+##        plt.close()
+##    else:
+##        plt.show()
+##
+##
+##    if (save_figs == 'array') or (save_figs == True):
+##        mean = np.around(np.mean(N_post.T_star),2)
+##        cv = np.around(np.std(N_post.T_star)/np.mean(N_post.T_star), 2)
+##        return mean,cv
+####    plt.show()
+##
+##    ##return N_post
+##            
+##    ##plot_vesicles(N_ex)
+##    ##plot_vesicles(N_post)
+##    ##
 
 
 ##pr tests
@@ -1938,53 +1940,53 @@ def run_2(test_args1, test_args2, k1, k2, address, save_figs = True, N_post_args
 
 
 
-##Tau tests
-
-address_tau = r'C:\Users\Oliver\Desktop\UDEL Work\Internship - Summer 2020 - Singh\Test Figures\tau'
-
-values1 = [10]
-values2 = 40 * [10]
-N_tests_1 = len(values1)
-N_tests_2 = len(values2)
-
-post_tau_values = np.linspace(0.0001, 10, 40)
-N_post_args = [{'tau':value} for value in post_tau_values]
-
-test_args1 = {'name':'ex', 'arg':'tau', 'values':values1}
-test_args2 = {'name':'inh', 'arg':'tau', 'values':values2}
-
-mean_array = np.zeros(len(N_post_args))
-cv_array = np.zeros(len(N_post_args))
-
-for k in range(len(N_post_args)):
-        mean, cv = run_2(test_args1, test_args2, 0, k,
-                    address_tau, save_figs = True, N_post_args = N_post_args[k])
-        mean_array[k] = mean
-        cv_array[k] = cv
-
-
-mean_array = np.array((pd.DataFrame(mean_array)).fillna(0))
-cv_array = np.array((pd.DataFrame(cv_array)).fillna(0))
-
-##mean2 = mean_array.copy()
-##for i in range(len(mean2)):
-##    mean2[i,i] = 0
-    
-#Plot mean_array    
-plt.plot(np.clip(mean_array, 0, 200))
-plt.title('Mean inter-firing intervals varying tau')
-
-plt.xticks(range(len(N_post_args)), np.around(post_tau_values,2))
-#plt.yticks(range(len(test_args2['values'])), np.around(test_args2['values'],3))
-plt.show()
-
-#Plot cv_array
-plt.plot(cv_array)
-plt.title('CV inter-firing intervals varying tau')
-
-plt.xticks(range(len(test_args1['values'])), np.around(test_args1['values'],2))
-plt.yticks(range(len(test_args2['values'])), np.around(test_args2['values'],3))
-plt.show()
+####Tau tests
+##
+##address_tau = r'C:\Users\Oliver\Desktop\UDEL Work\Internship - Summer 2020 - Singh\Test Figures\tau'
+##
+##values1 = [10]
+##values2 = 40 * [10]
+##N_tests_1 = len(values1)
+##N_tests_2 = len(values2)
+##
+##post_tau_values = np.linspace(0.0001, 10, 40)
+##N_post_args = [{'tau':value} for value in post_tau_values]
+##
+##test_args1 = {'name':'ex', 'arg':'tau', 'values':values1}
+##test_args2 = {'name':'inh', 'arg':'tau', 'values':values2}
+##
+##mean_array = np.zeros(len(N_post_args))
+##cv_array = np.zeros(len(N_post_args))
+##
+##for k in range(len(N_post_args)):
+##        mean, cv = run_2(test_args1, test_args2, 0, k,
+##                    address_tau, save_figs = True, N_post_args = N_post_args[k])
+##        mean_array[k] = mean
+##        cv_array[k] = cv
+##
+##
+##mean_array = np.array((pd.DataFrame(mean_array)).fillna(0))
+##cv_array = np.array((pd.DataFrame(cv_array)).fillna(0))
+##
+####mean2 = mean_array.copy()
+####for i in range(len(mean2)):
+####    mean2[i,i] = 0
+##    
+###Plot mean_array    
+##plt.plot(np.clip(mean_array, 0, 200))
+##plt.title('Mean inter-firing intervals varying tau')
+##
+##plt.xticks(range(len(N_post_args)), np.around(post_tau_values,2))
+###plt.yticks(range(len(test_args2['values'])), np.around(test_args2['values'],3))
+##plt.show()
+##
+###Plot cv_array
+##plt.plot(cv_array)
+##plt.title('CV inter-firing intervals varying tau')
+##
+##plt.xticks(range(len(test_args1['values'])), np.around(test_args1['values'],2))
+##plt.yticks(range(len(test_args2['values'])), np.around(test_args2['values'],3))
+##plt.show()
 
 ####kv tests
 
@@ -2161,4 +2163,116 @@ plt.show()
 ####plt.yticks(range(len(test_args2['values'])), np.around(test_args2['values'],3))
 ##plt.show()
 
+###############################################################################
+###############################################################################                
+###############################################################################
+#
+#                       FEEDBACK WITH MODIFIED REFRACTORY PERIOD
+#
+###############################################################################
+###############################################################################
+###############################################################################
+
+n_tests = 1000 #means 1000 ms which is 1 second, 100000 means us
+
+parameter_args = ['name', 'n_type', 'M', 'E', 'k',
+                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'AP_per_second',
+                  'AP_length','refractory_period', 'A','tau','AP_prob_function',
+                  'other']
+
+template_args = make_template(parameter_args)
+
+
+N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5,
+                        pr = 0.6, kv = 0.01, AP_prob_function = sigmoid,
+                        AP_per_second = 10)
+N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v', M = 10, E = 5,
+                         pr = 0.2, AP_prob_function = sigmoid,
+                         kv = -0.01, AP_per_second = 10)
+
+
+N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
+                          kv = -0.02, AP_prob_function = sigmoid,
+                          refractory_period = 0.001)
+
+N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
+                            pr = 0.3, AP_prob_function = sigmoid,
+                            refractory_period = 0.001)
+
+##MUST ATTACH A NEURON TO THE END OF ANY NEURON YOU WANT TO MEASURE VESICLES OF.
+##3 is connected after 2 so you can measure 2.  It's a measuring neuron
+
+args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict]
+neuron_args_check(args_dict_list, template_args)
+
+N_ex = Neuron(N_ex_dict, n_tests)
+N_inh = Neuron(N_inh_dict, n_tests)
+
+N_ex.firing_neuron = True
+N_inh.firing_neuron = True
+
+N_post = Neuron(N_post_dict, n_tests)
+
+c1 = [[N_ex, N_inh], N_post]
+c2 = [N_post, N_post]
+
+connections = [c1, c2]
+
+
+make_pre_post_connections(connections)
+
+n_seconds = 60 #60 seconds times 1 min/s
+
+
+full_neuron_list = [N_ex, N_inh, N_post]
+
+firing_neurons_list  = [neuron for neuron in full_neuron_list \
+                        if (neuron.firing_neuron  == True)]
+firing_neurons_dict = {neuron.name:neuron for neuron in firing_neurons_list}
+firing_times_names = generate_AP_times_and_reactions(firing_neurons_list,
+                                                     n_seconds)
+firing_times_dict = get_firing_times_dict(firing_times_names)
+
+##Main test
+
+for i in range(len(firing_times_names)):
+
+    t_current = firing_times_names[i][0]
+        
+    firing_neuron_name = firing_times_names[i][1]
+    firing_neuron = firing_neurons_dict[firing_neuron_name]
+    post_neurons_dict = firing_neurons_dict[firing_neuron_name].post()
+    
+    update_voltages_and_times(firing_neuron, post_neurons_dict, t_current)
+
+    #perform function
+    print('\r{}%'.format(i * 100 / len(firing_times_names)), end='')
+    sys.stdout.flush()
+
+##Plotting Results
+
+##plot_firing_times(firing_neurons_list, firing_times_dict)
+
+N_post.get_T_star(plotting = True) #plotting = True plots T_star
+
+##If bottom peaks go to 0, it means that a presynaptic neuron tried to
+##add voltage, but nothing happened because the neuron was within the
+##refractory period.
+
+plot_voltage_vs_time(N_post, n_seconds)
+##plot_voltage_vs_time(N_post_2, n_seconds)
+
+##sns.distplot(N_post.T_star, bins = 100)
+##plt.show()
+
+##plt.hist(N_post.T_star, bins = 100)
+##plt.title('Histogram of inter-firing time intervals: {}, {}'.format(N_ex.pr,
+##                                                                    N_inh.pr))
+##plt.xlabel('Time (ms)')
+##plt.ylabel('Counts')
+##
+##plt.show()
+        
+##plot_vesicles(N_ex)
+##plot_vesicles(N_post)
 
