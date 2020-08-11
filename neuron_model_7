@@ -48,6 +48,37 @@
 #Plotting vesicles: (1.) Number of vesicles present,
 #(2.) number of empty sites, (3.) number of releases.
 
+
+
+#-------------------------------------------------------------------------------
+#
+#                                  Notes 3:
+#
+#-------------------------------------------------------------------------------
+
+#1. [ ] Plot the correlation between consecutive mean firing times.
+
+#2. [ ] Fit all the histograms to a distributions.
+
+#3. [X] Fano factor, variance over mean.  It's 1 for a poisson process.  How far
+#It deviates from that 
+
+#Look at correlation firign times.  For the same mean does having one input vs
+#two inputs which has higher noise.  Controlled comparison: One positive vs one positive
+#one negative, and the same output frequency.  Change parameters a bit.  Look at
+#The noise levels.  Hard to look at noise because mean is changing so much.
+#If fixed mean, higher mean by playing with parameters.  Higher threshold.
+
+#Each vesicle in the site.  It's released, the site becomes filled up again.
+#Refractory state for each site, it takes a while for the neuron to repair that site.
+#Vesicle in repair state.
+
+#Refill an empty site
+
+#Equations present more.
+
+
+
 ###############################################################################
 #########################+######################################################                
 ###############################################################################
@@ -66,6 +97,7 @@ import pandas as pd
 import seaborn as sns
 import sys
 import os
+import scipy
 
 ###############################################################################
 ###############################################################################                
@@ -181,8 +213,6 @@ class Neuron:
         self.nt_per_vesicles = self.nt = np.random.randint(3000, 10001)
 
 
-
-
 ################################################################################
 #NEW ATTRIBUTES
         #Time measurements
@@ -292,17 +322,21 @@ class Neuron:
                 continue
             self.T_star.append(self.AP_time_history[i] - self.AP_time_history[i-1])
 
-        self.T_star = 1000*np.array(self.T_star)
+        self.T_star = np.array(self.T_star)
         
         if plotting == True:
             plt.plot(self.T_star, label = 'T_star')
             plt.plot(np.mean(self.T_star) * np.ones(len(self.T_star)),
-                     label = 'Mean (ms) = {}'.format(np.around(np.mean(self.T_star),3)))
+                     label = 'Mean (s) = {}'.format(np.around(
+                         np.mean(self.T_star),3)))
             plt.plot([0], label = 'CV = {}'.format(\
                 np.around(np.std(self.T_star)/np.mean(self.T_star),2)))
+            plt.plot([1], label = 'Fano factor = {}'.format(np.around(
+                np.var(self.T_star)/np.mean(self.T_star),2)))
             plt.xlabel('k-th instance of T_star')
-            plt.ylabel('Time (ms)')
-            plt.title('Time between action potentials (T_star) of neuron \"{}\"'.format(self.name))
+            plt.ylabel('Time (s)')
+            plt.title(
+                'Time between action potentials (T_star) of neuron \"{}\"'.format(self.name))
             plt.legend()
             plt.show()
         return self.T_star
@@ -2193,7 +2227,7 @@ N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v', M = 10, E = 5,
 
 N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
                           kv = -0.02, AP_prob_function = sigmoid,
-                          refractory_period = 0.001)
+                          refractory_period = 0.001, tau = 20)
 
 N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
                             pr = 0.3, AP_prob_function = sigmoid,
@@ -2221,7 +2255,7 @@ connections = [c1, c2]
 
 make_pre_post_connections(connections)
 
-n_seconds = 60 #60 seconds times 1 min/s
+n_seconds = 60*30 #60 seconds times 1 min/s
 
 
 full_neuron_list = [N_ex, N_inh, N_post]
@@ -2260,6 +2294,7 @@ N_post.get_T_star(plotting = True) #plotting = True plots T_star
 ##refractory period.
 
 plot_voltage_vs_time(N_post, n_seconds)
+
 ##plot_voltage_vs_time(N_post_2, n_seconds)
 
 ##sns.distplot(N_post.T_star, bins = 100)
@@ -2276,3 +2311,33 @@ plot_voltage_vs_time(N_post, n_seconds)
 ##plot_vesicles(N_ex)
 ##plot_vesicles(N_post)
 
+T_star_dist = scipy.stats.rv_histogram(np.histogram(N_post.T_star))
+
+
+##import scipy.stats as st
+##def get_best_distribution(data):
+##    dist_names = ["norm", "gamma", "exponweib", "weibull_max", "weibull_min", "pareto", "genextreme"]
+##    dist_results = []
+##    params = {}
+##    for dist_name in dist_names:
+##        dist = getattr(st, dist_name)
+##        param = dist.fit(data)
+##
+##        params[dist_name] = param
+##        # Applying the Kolmogorov-Smirnov test
+##        D, p = st.kstest(data, dist_name, args=param)
+##        print("p value for "+dist_name+" = "+str(p))
+##        dist_results.append((dist_name, p))
+##
+##    # select the best fitted distribution
+##    best_dist, best_p = (max(dist_results, key=lambda item: item[1]))
+##    # store the name of the best fit and its p value
+##
+##    print("Best fitting distribution: "+str(best_dist))
+##    print("Best p value: "+ str(best_p))
+##    print("Parameters for the best fit: "+ str(params[best_dist]))
+##
+##    return best_dist, best_p, params[best_dist]
+##
+##get_best_distribution(N_post.T_star)
+##
