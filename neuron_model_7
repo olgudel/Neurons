@@ -63,13 +63,13 @@
 #3. [X] Fano factor, variance over mean.  It's 1 for a poisson process.  How far
 #It deviates from that 
 
-#Look at correlation firign times.  For the same mean does having one input vs
+#4. [ ] Look at correlation firing times.  For the same mean does having one input vs
 #two inputs which has higher noise.  Controlled comparison: One positive vs one positive
 #one negative, and the same output frequency.  Change parameters a bit.  Look at
 #The noise levels.  Hard to look at noise because mean is changing so much.
 #If fixed mean, higher mean by playing with parameters.  Higher threshold.
 
-#Each vesicle in the site.  It's released, the site becomes filled up again.
+#5. [ ] Each vesicle in the site.  It's released, the site becomes filled up again.
 #Refractory state for each site, it takes a while for the neuron to repair that site.
 #Vesicle in repair state.
 
@@ -331,7 +331,7 @@ class Neuron:
                          np.mean(self.T_star),3)))
             plt.plot([0], label = 'CV = {}'.format(\
                 np.around(np.std(self.T_star)/np.mean(self.T_star),2)))
-            plt.plot([1], label = 'Fano factor = {}'.format(np.around(
+            plt.plot([0], [0], label = 'Fano factor = {}'.format(np.around(
                 np.var(self.T_star)/np.mean(self.T_star),2)))
             plt.xlabel('k-th instance of T_star')
             plt.ylabel('Time (s)')
@@ -343,6 +343,29 @@ class Neuron:
     
     def get_firing_decision(self, percentage):
         self.firing_decision = np.random.uniform(0,1) <= percentage
+
+    def get_histogram(self, plotting = False):
+
+
+        # Fit a gamma distribution to the data:
+        alpha, loc, beta = scipy.stats.gamma.fit(self.T_star)
+
+        if plotting == True:
+
+            # Plot the histogram.
+            plt.hist(self.T_star, bins=100, density=True, alpha=0.6, color='g')
+
+            # Plot the PDF.
+            xmin, xmax = plt.xlim()
+            x = np.linspace(xmin, xmax, 100)
+            p = scipy.stats.gamma.pdf(x, alpha, loc, beta)
+            plt.plot(x, p, 'k', linewidth=2)
+            title = "Fit results: alpha = %.2f,  beta = %.2f" % (alpha, beta)
+            plt.title(title)
+
+            plt.show()
+        return alpha, loc, beta
+
 
  #NEW METHODS END         
 ################################################################################
@@ -1094,6 +1117,28 @@ def plot_vesicles(neuron):
             ax[i].set_xlabel('Instance')
         ax[i].set_ylabel(y_labels[i])
     plt.show()
+
+def run_main_test(full_neuron_list, n_seconds):
+    firing_neurons_list  = [neuron for neuron in full_neuron_list \
+                        if (neuron.firing_neuron  == True)]
+    firing_neurons_dict = {neuron.name:neuron for neuron in firing_neurons_list}
+    firing_times_names = generate_AP_times_and_reactions(firing_neurons_list,
+                                                     n_seconds)
+    firing_times_dict = get_firing_times_dict(firing_times_names)
+##Main test
+    for i in range(len(firing_times_names)):
+
+        t_current = firing_times_names[i][0]
+            
+        firing_neuron_name = firing_times_names[i][1]
+        firing_neuron = firing_neurons_dict[firing_neuron_name]
+        post_neurons_dict = firing_neurons_dict[firing_neuron_name].post()
+        
+        update_voltages_and_times(firing_neuron, post_neurons_dict, t_current)
+
+        #perform function
+        print('\r{}%'.format(i * 100 / len(firing_times_names)), end='')
+        sys.stdout.flush()
     
 ###############################################################################
 ###############################################################################                
@@ -2223,22 +2268,28 @@ N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5,
 N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v', M = 10, E = 5,
                          pr = 0.2, AP_prob_function = sigmoid,
                          kv = -0.01, AP_per_second = 10)
-
-
 N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
                           kv = -0.02, AP_prob_function = sigmoid,
                           refractory_period = 0.001, tau = 20)
 
-N_post_dict_2 = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
+
+N_ex_2_dict = neuron_dict(name = 'N_ex_2',n_type='ex',M = 10, E = 5,
                             pr = 0.3, AP_prob_function = sigmoid,
                             refractory_period = 0.001)
+N_post_2_dict = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
+                            pr = 0.3, AP_prob_function = sigmoid,
+                            refractory_period = 0.001)
+
+
 
 ##MUST ATTACH A NEURON TO THE END OF ANY NEURON YOU WANT TO MEASURE VESICLES OF.
 ##3 is connected after 2 so you can measure 2.  It's a measuring neuron
 
-args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict]
+args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict,
+                  N_ex_2_dict, N_post_2_dict]
 neuron_args_check(args_dict_list, template_args)
 
+#Set up first network
 N_ex = Neuron(N_ex_dict, n_tests)
 N_inh = Neuron(N_inh_dict, n_tests)
 
@@ -2247,53 +2298,78 @@ N_inh.firing_neuron = True
 
 N_post = Neuron(N_post_dict, n_tests)
 
+#Set up second network
+N_ex_2 = Neuron(N_ex_2_dict, n_tests)
+N_ex_2.firing_neuron = True
+N_post_2 = Neuron(N_post_2_dict, n_tests)
+
+#Make connections
 c1 = [[N_ex, N_inh], N_post]
 c2 = [N_post, N_post]
+c3 = [N_ex_2, N_post_2]
+c4 = [N_post_2, N_post_2]
 
-connections = [c1, c2]
+connections_1 = [c1, c2]
+connections_2 = [c3, c4]
 
+make_pre_post_connections(connections_1)
+make_pre_post_connections(connections_2)
 
-make_pre_post_connections(connections)
+#Test duration
+n_seconds = 60*10 #60 seconds times 1 min/s
 
-n_seconds = 60*30 #60 seconds times 1 min/s
+full_neuron_list_1 = [N_ex, N_inh, N_post]
+full_neuron_list_2 = [N_ex_2, N_post_2]
 
+#MAIN TEST
+run_main_test(full_neuron_list_1, n_seconds)
+run_main_test(full_neuron_list_2, n_seconds)
 
-full_neuron_list = [N_ex, N_inh, N_post]
-
-firing_neurons_list  = [neuron for neuron in full_neuron_list \
-                        if (neuron.firing_neuron  == True)]
-firing_neurons_dict = {neuron.name:neuron for neuron in firing_neurons_list}
-firing_times_names = generate_AP_times_and_reactions(firing_neurons_list,
-                                                     n_seconds)
-firing_times_dict = get_firing_times_dict(firing_times_names)
-
-##Main test
-
-for i in range(len(firing_times_names)):
-
-    t_current = firing_times_names[i][0]
-        
-    firing_neuron_name = firing_times_names[i][1]
-    firing_neuron = firing_neurons_dict[firing_neuron_name]
-    post_neurons_dict = firing_neurons_dict[firing_neuron_name].post()
-    
-    update_voltages_and_times(firing_neuron, post_neurons_dict, t_current)
-
-    #perform function
-    print('\r{}%'.format(i * 100 / len(firing_times_names)), end='')
-    sys.stdout.flush()
 
 ##Plotting Results
 
 ##plot_firing_times(firing_neurons_list, firing_times_dict)
 
 N_post.get_T_star(plotting = True) #plotting = True plots T_star
+N_post_2.get_T_star(plotting = True)
+N_post.get_histogram(plotting = True)
+
+
+
+####Plot histograms
+##hist, bins = np.histogram(N_post.T_star, bins = 200)
+##hist = hist.astype(float)
+##hist *= 1/np.sum(hist)
+##plt.bar(bins[:-1], hist)
+##plt.show()
+##
+##
+##
+##
+####Plot histograms
+##plt.hist(N_post.T_star, bins = 100, density = 1)
+##plt.title('Histogram of inter-firing time intervals: {}, {}'.format(N_ex.pr,
+##                                                                    N_inh.pr))
+##plt.xlabel('Time (ms)')
+##plt.ylabel('Counts')
+##
+##xt = plt.xticks()[0]  
+##xmin, xmax = min(xt), max(xt)  
+##line_data = np.linspace(xmin, xmax, len(N_post.T_star))
+##
+##ag, bg, cg = scipy.stats.gamma.fit(N_post.T_star)
+##pdf_gamma = scipy.stats.gamma.pdf(line_data, ag, bg, cg)
+##plt.plot(line_data, pdf_gamma)
+##
+##plt.show()
+
 
 ##If bottom peaks go to 0, it means that a presynaptic neuron tried to
 ##add voltage, but nothing happened because the neuron was within the
 ##refractory period.
 
-plot_voltage_vs_time(N_post, n_seconds)
+##plot_voltage_vs_time(N_post, n_seconds)
+##plot_voltage_vs_time(N_post_2, n_seconds)
 
 ##plot_voltage_vs_time(N_post_2, n_seconds)
 
@@ -2311,7 +2387,7 @@ plot_voltage_vs_time(N_post, n_seconds)
 ##plot_vesicles(N_ex)
 ##plot_vesicles(N_post)
 
-T_star_dist = scipy.stats.rv_histogram(np.histogram(N_post.T_star))
+##T_star_dist = scipy.stats.rv_histogram(np.histogram(N_post.T_star))
 
 
 ##import scipy.stats as st
@@ -2341,3 +2417,5 @@ T_star_dist = scipy.stats.rv_histogram(np.histogram(N_post.T_star))
 ##
 ##get_best_distribution(N_post.T_star)
 ##
+
+
