@@ -14,7 +14,7 @@
 
 #Change the frequency plot all variables.  Benchmarking code against Zahra's.
 
-  #Gillespi to choose next reaction: np.random.choice([reactions], 1, p = [pr1, ...])
+#Gillespi to choose next reaction: np.random.choice([reactions], 1, p = [pr1, ...])
 
 #-------------------------------------------------------------------------------
 #
@@ -58,7 +58,7 @@
 
 #1. [ ] Plot the correlation between consecutive mean firing times.
 
-#2. [ ] Fit all the histograms to a distributions.
+#2. [X] Fit all the histograms to a distributions.
 
 #3. [X] Fano factor, variance over mean.  It's 1 for a poisson process.  How far
 #It deviates from that 
@@ -346,23 +346,28 @@ class Neuron:
 
     def get_histogram(self, plotting = False):
 
-
         # Fit a gamma distribution to the data:
         alpha, loc, beta = scipy.stats.gamma.fit(self.T_star)
 
         if plotting == True:
 
             # Plot the histogram.
-            plt.hist(self.T_star, bins=100, density=True, alpha=0.6, color='g')
+            plt.hist(self.T_star, bins=100, density=True, alpha=0.6, color='g',
+                    label = 'Inter-firing time interval histogram')
 
             # Plot the PDF.
             xmin, xmax = plt.xlim()
-            x = np.linspace(xmin, xmax, 100)
-            p = scipy.stats.gamma.pdf(x, alpha, loc, beta)
-            plt.plot(x, p, 'k', linewidth=2)
-            title = "Fit results: alpha = %.2f,  beta = %.2f" % (alpha, beta)
-            plt.title(title)
+            plotting_space = np.linspace(xmin, xmax, 100)
+            p = scipy.stats.gamma.pdf(plotting_space, alpha, loc, beta)
 
+            gamma_label = "Gamma distribution: alpha = %.2f,  beta = %.2f" % (alpha, beta)
+            plt.plot(plotting_space, p, 'k', linewidth=2,
+                     label = gamma_label)
+            title = 'Gamma distribution superimposed over \ninter-firing time interval histogram' 
+            plt.title(title)
+            plt.xlabel('Time (s)')
+            plt.ylabel('Normalized Histogram')
+            plt.legend()
             plt.show()
         return alpha, loc, beta
 
@@ -1020,14 +1025,10 @@ def plot_firing_times(firing_neurons_list, firing_times_dict):
         
 def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
 
-
     pre_neuron.t_current = t_current
 
     for post_neuron_name in post_neurons_dict.keys():
-
-
-              
-        
+       
         post_neuron = post_neurons_dict[post_neuron_name]
 
         post_neuron.outside_of_refractory_period = \
@@ -1035,15 +1036,7 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
                                  post_neuron.refractory_period )
        
         refractory_condition = post_neuron.outside_of_refractory_period
-        effects_condition = False
 
-        #If the neuron is just an effect neuron.
-        if len(pre_neuron.effects) > 0:
-            effects_condition = \
-                    pre_neuron.effects['refractory_period_dependent'] == False
-            
-##        if (refractory_condition == True) or \
-##           (effects_condition == True):
         post_neuron.t_current = t_current            
         post_neuron.add_voltage(pre_neuron, t_current)
         post_neuron.t_previous = t_current
@@ -1066,10 +1059,13 @@ def update_voltages_and_times(pre_neuron, post_neurons_dict, t_current):
 
         firing_condition = post_neuron.firing_decision
         refractory_condition = post_neuron.outside_of_refractory_period
+        firing_and_refractory_condition = firing_condition and \
+                                          refractory_condition
+
         
            
-
-        if ((firing_condition and refractory_condition) == True): 
+        #NEW
+        if firing_and_refractory_condition == True: 
             post_neuron.voltage_at_APs.append(post_neuron.current_voltage)
             post_neuron.current_voltage = 0
             post_neuron.AP_time_history.append(t_current)
@@ -2262,6 +2258,7 @@ parameter_args = ['name', 'n_type', 'M', 'E', 'k',
 template_args = make_template(parameter_args)
 
 
+#Ex + inh + self-feedback
 N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5,
                         pr = 0.6, kv = 0.01, AP_prob_function = sigmoid,
                         AP_per_second = 10)
@@ -2272,13 +2269,27 @@ N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
                           kv = -0.02, AP_prob_function = sigmoid,
                           refractory_period = 0.001, tau = 20)
 
-
+#Ex + feedback
 N_ex_2_dict = neuron_dict(name = 'N_ex_2',n_type='ex',M = 10, E = 5,
                             pr = 0.3, AP_prob_function = sigmoid,
                             refractory_period = 0.001)
 N_post_2_dict = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
                             pr = 0.3, AP_prob_function = sigmoid,
                             refractory_period = 0.001)
+
+#Ex + inh, no feedback
+N_ex_3_dict = neuron_dict(name = 'N_ex_3', n_type = 'ex', M = 10, E = 5,
+                        pr = 0.6, kv = 0.01, AP_prob_function = sigmoid,
+                        AP_per_second = 10)
+N_inh_3_dict = neuron_dict(name = 'N_inh_3',n_type='inh_v', M = 10, E = 5,
+                         pr = 0.2, AP_prob_function = sigmoid,
+                         kv = -0.01, AP_per_second = 10)
+N_post_3_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
+                          kv = -0.02, AP_prob_function = sigmoid,
+                          refractory_period = 0.001, tau = 20)
+N_post_3_post_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
+                          kv = -0.02, AP_prob_function = sigmoid,
+                          refractory_period = 0.001, tau = 20)
 
 
 
@@ -2289,7 +2300,7 @@ args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict,
                   N_ex_2_dict, N_post_2_dict]
 neuron_args_check(args_dict_list, template_args)
 
-#Set up first network
+#First network: E+I+F
 N_ex = Neuron(N_ex_dict, n_tests)
 N_inh = Neuron(N_inh_dict, n_tests)
 
@@ -2298,33 +2309,50 @@ N_inh.firing_neuron = True
 
 N_post = Neuron(N_post_dict, n_tests)
 
-#Set up second network
+#Second network: E + F
 N_ex_2 = Neuron(N_ex_2_dict, n_tests)
 N_ex_2.firing_neuron = True
 N_post_2 = Neuron(N_post_2_dict, n_tests)
 
-#Make connections
-c1 = [[N_ex, N_inh], N_post]
-c2 = [N_post, N_post]
-c3 = [N_ex_2, N_post_2]
-c4 = [N_post_2, N_post_2]
+#Third Network: E+I, no F
+N_ex_3 = Neuron(N_ex_3_dict, n_tests)
+N_inh_3 = Neuron(N_inh_3_dict, n_tests)
 
-connections_1 = [c1, c2]
-connections_2 = [c3, c4]
+N_ex_3.firing_neuron = True
+N_inh_3.firing_neuron = True
+
+N_post_3 = Neuron(N_post_3_dict, n_tests)
+N_post_3_post = Neuron(N_post_3_post_dict, n_tests)
+
+#Make connections
+c11 = [[N_ex, N_inh], N_post]
+c12 = [N_post, N_post]
+
+c21 = [N_ex_2, N_post_2]
+c22 = [N_post_2, N_post_2]
+
+c31 = [[N_ex_3, N_inh_3], N_post_3]
+c32 = [N_post_3, N_post_3_post]
+
+
+connections_1 = [c11, c12]
+connections_2 = [c21, c22]
+connections_3 = [c31, c32]
 
 make_pre_post_connections(connections_1)
 make_pre_post_connections(connections_2)
+make_pre_post_connections(connections_3)
 
 #Test duration
 n_seconds = 60*10 #60 seconds times 1 min/s
 
 full_neuron_list_1 = [N_ex, N_inh, N_post]
 full_neuron_list_2 = [N_ex_2, N_post_2]
-
+full_neuron_list_3 = [N_ex_3, N_inh_3, N_post_3, N_post_3_post]
 #MAIN TEST
 run_main_test(full_neuron_list_1, n_seconds)
 run_main_test(full_neuron_list_2, n_seconds)
-
+run_main_test(full_neuron_list_3, n_seconds)
 
 ##Plotting Results
 
@@ -2332,36 +2360,17 @@ run_main_test(full_neuron_list_2, n_seconds)
 
 N_post.get_T_star(plotting = True) #plotting = True plots T_star
 N_post_2.get_T_star(plotting = True)
+N_post_3.get_T_star(plotting = True)
+
 N_post.get_histogram(plotting = True)
+N_post_2.get_histogram(plotting = True)
+N_post_3.get_histogram(plotting = True)
+
+##x = sns.distplot(N_post_2.T_star, fit = scipy.stats.gamma)
+plt.show()
 
 
 
-####Plot histograms
-##hist, bins = np.histogram(N_post.T_star, bins = 200)
-##hist = hist.astype(float)
-##hist *= 1/np.sum(hist)
-##plt.bar(bins[:-1], hist)
-##plt.show()
-##
-##
-##
-##
-####Plot histograms
-##plt.hist(N_post.T_star, bins = 100, density = 1)
-##plt.title('Histogram of inter-firing time intervals: {}, {}'.format(N_ex.pr,
-##                                                                    N_inh.pr))
-##plt.xlabel('Time (ms)')
-##plt.ylabel('Counts')
-##
-##xt = plt.xticks()[0]  
-##xmin, xmax = min(xt), max(xt)  
-##line_data = np.linspace(xmin, xmax, len(N_post.T_star))
-##
-##ag, bg, cg = scipy.stats.gamma.fit(N_post.T_star)
-##pdf_gamma = scipy.stats.gamma.pdf(line_data, ag, bg, cg)
-##plt.plot(line_data, pdf_gamma)
-##
-##plt.show()
 
 
 ##If bottom peaks go to 0, it means that a presynaptic neuron tried to
@@ -2375,20 +2384,9 @@ N_post.get_histogram(plotting = True)
 
 ##sns.distplot(N_post.T_star, bins = 100)
 ##plt.show()
-
-##plt.hist(N_post.T_star, bins = 100)
-##plt.title('Histogram of inter-firing time intervals: {}, {}'.format(N_ex.pr,
-##                                                                    N_inh.pr))
-##plt.xlabel('Time (ms)')
-##plt.ylabel('Counts')
-##
-##plt.show()
         
 ##plot_vesicles(N_ex)
 ##plot_vesicles(N_post)
-
-##T_star_dist = scipy.stats.rv_histogram(np.histogram(N_post.T_star))
-
 
 ##import scipy.stats as st
 ##def get_best_distribution(data):
@@ -2415,7 +2413,7 @@ N_post.get_histogram(plotting = True)
 ##
 ##    return best_dist, best_p, params[best_dist]
 ##
-##get_best_distribution(N_post.T_star)
-##
+##get_best_distribution(N_post_2.T_star)
+
 
 
