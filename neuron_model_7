@@ -2067,136 +2067,334 @@ def get_best_distribution(data):
 ####plt.yticks(range(len(test_args2['values'])), np.around(test_args2['values'],3))
 ##plt.show()
 
+#################################################################################
+#################################################################################                
+#################################################################################
+###
+###                       FEEDBACK WITH MODIFIED REFRACTORY PERIOD
+###
+#################################################################################
+#################################################################################
+#################################################################################
+##parameter_args = ['name', 'n_type', 'M', 'E', 'k',
+##                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'AP_per_second',
+##                  'AP_length','refractory_period', 'A','tau','AP_prob_function',
+##                  'other']
+##
+##template_args = make_template(parameter_args)
+##
+###Ex + inh + self-feedback
+##N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5,
+##                        pr = 0.6, kv = 0.01, AP_prob_function = sigmoid,
+##                        AP_per_second = 10)
+##N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v', M = 10, E = 5,
+##                         pr = 0.2, AP_prob_function = sigmoid,
+##                         kv = -0.01, AP_per_second = 10)
+##N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
+##                          kv = -0.02, AP_prob_function = sigmoid,
+##                          refractory_period = 0.003, tau = 20)
+##
+###Ex + feedback
+##N_ex_2_dict = neuron_dict(name = 'N_ex_2',n_type='ex',M = 10, E = 5,
+##                            pr = 0.3, AP_prob_function = sigmoid,
+##                            refractory_period = 0.003)
+##N_post_2_dict = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
+##                            pr = 0.3, AP_prob_function = sigmoid,
+##                            refractory_period = 0.003)
+##
+###Ex + inh, no feedback
+##N_ex_3_dict = neuron_dict(name = 'N_ex_3', n_type = 'ex', M = 10, E = 5,
+##                        pr = 0.6, kv = 0.01, AP_prob_function = sigmoid,
+##                        AP_per_second = 10)
+##N_inh_3_dict = neuron_dict(name = 'N_inh_3',n_type='inh_v', M = 10, E = 5,
+##                         pr = 0.2, AP_prob_function = sigmoid,
+##                         kv = -0.01, AP_per_second = 10)
+##N_post_3_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
+##                          kv = -0.02, AP_prob_function = sigmoid,
+##                          refractory_period = 0.003, tau = 20)
+##N_post_3_post_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
+##                          kv = -0.02, AP_prob_function = sigmoid,
+##                          refractory_period = 0.003, tau = 20)
+##
+##
+##
+####MUST ATTACH A NEURON TO THE END OF ANY NEURON YOU WANT TO MEASURE VESICLES OF.
+####3 is connected after 2 so you can measure 2.  It's a measuring neuron
+##
+##args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict,
+##                  N_ex_2_dict, N_post_2_dict]
+##neuron_args_check(args_dict_list, template_args)
+##
+###First network: E+I+F
+##N_ex = Neuron(N_ex_dict)
+##N_inh = Neuron(N_inh_dict)
+##
+##N_ex.firing_neuron = True
+##N_inh.firing_neuron = True
+##
+##N_post = Neuron(N_post_dict)
+##
+###Second network: E + F
+##N_ex_2 = Neuron(N_ex_2_dict)
+##N_ex_2.firing_neuron = True
+##N_post_2 = Neuron(N_post_2_dict)
+##
+###Third Network: E+I, no F
+##N_ex_3 = Neuron(N_ex_3_dict)
+##N_inh_3 = Neuron(N_inh_3_dict)
+##
+##N_ex_3.firing_neuron = True
+##N_inh_3.firing_neuron = True
+##
+##N_post_3 = Neuron(N_post_3_dict)
+##N_post_3_post = Neuron(N_post_3_post_dict)
+##
+###Make connections
+##c11 = [[N_ex, N_inh], N_post]
+##c12 = [N_post, N_post]
+##
+##c21 = [N_ex_2, N_post_2]
+##c22 = [N_post_2, N_post_2]
+##
+##c31 = [[N_ex_3, N_inh_3], N_post_3]
+##c32 = [N_post_3, N_post_3_post]
+##
+##
+##connections_1 = [c11, c12]
+##connections_2 = [c21, c22]
+##connections_3 = [c31, c32]
+##
+##make_pre_post_connections(connections_1)
+##make_pre_post_connections(connections_2)
+##make_pre_post_connections(connections_3)
+##
+###Test duration
+##n_seconds = 60*20 #60 seconds times 1 min/s
+##
+##full_neuron_list_1 = [N_ex, N_inh, N_post]
+##full_neuron_list_2 = [N_ex_2, N_post_2]
+##full_neuron_list_3 = [N_ex_3, N_inh_3, N_post_3, N_post_3_post]
+###MAIN TEST
+##run_main_test(full_neuron_list_1, n_seconds)
+####run_main_test(full_neuron_list_2, n_seconds)
+##run_main_test(full_neuron_list_3, n_seconds)
+##
+####Plotting Results
+##
+####plot_firing_times(firing_neurons_list, firing_times_dict)
+##
+##N_post.get_T_star(plotting = False) #plotting = True plots T_star
+####N_post_2.get_T_star(plotting = True)
+##N_post_3.get_T_star(plotting = False)
+##
+##N_post.get_histogram(plotting = True)
+####N_post_2.get_histogram(plotting = True)
+##N_post_3.get_histogram(plotting = True)
+##
+####x = sns.distplot(N_post_2.T_star, fit = scipy.stats.gamma)
+##plt.show()
+##
+##
+##
+##
+##
+####If bottom peaks go to 0, it means that a presynaptic neuron tried to
+####add voltage, but nothing happened because the neuron was within the
+####refractory period.
+##
+####plot_voltage_vs_time(N_post, n_seconds)
+####plot_voltage_vs_time(N_post_2, n_seconds)
+##
+####plot_voltage_vs_time(N_post_2, n_seconds)
+##
+####sns.distplot(N_post.T_star, bins = 100)
+####plt.show()
+##        
+####plot_vesicles(N_ex)
+####plot_vesicles(N_post)
+##
+##
+####get_best_distribution(N_post_2.T_star)
+##
+##
+
 ###############################################################################
 ###############################################################################                
 ###############################################################################
 #
-#                       FEEDBACK WITH MODIFIED REFRACTORY PERIOD
+#                       COMPARISON FUNCTION
 #
 ###############################################################################
 ###############################################################################
 ###############################################################################
-parameter_args = ['name', 'n_type', 'M', 'E', 'k',
-                  'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'AP_per_second',
-                  'AP_length','refractory_period', 'A','tau','AP_prob_function',
-                  'other']
+def comparison_function():
+    parameter_args = ['name', 'n_type', 'M', 'E', 'k',
+                      'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'AP_per_second',
+                      'AP_length','refractory_period', 'A','tau','AP_prob_function',
+                      'other']
 
-template_args = make_template(parameter_args)
+    template_args = make_template(parameter_args)
 
-#Ex + inh + self-feedback
-N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5,
-                        pr = 0.6, kv = 0.01, AP_prob_function = sigmoid,
-                        AP_per_second = 10)
-N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v', M = 10, E = 5,
-                         pr = 0.2, AP_prob_function = sigmoid,
-                         kv = -0.01, AP_per_second = 10)
-N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
-                          kv = -0.02, AP_prob_function = sigmoid,
-                          refractory_period = 0.003, tau = 20)
+    #Ex + inh + self-feedback
+    N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5,
+                            pr = 0.6, kv = 0.01, AP_prob_function = sigmoid,
+                            AP_per_second = 10)
+    N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v', M = 10, E = 5,
+                             pr = 0.2, AP_prob_function = sigmoid,
+                             kv = -0.01, AP_per_second = 10)
+    N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
+                              kv = -0.02, AP_prob_function = sigmoid,
+                              refractory_period = 0.003, tau = 20)
 
-#Ex + feedback
-N_ex_2_dict = neuron_dict(name = 'N_ex_2',n_type='ex',M = 10, E = 5,
-                            pr = 0.3, AP_prob_function = sigmoid,
-                            refractory_period = 0.003)
-N_post_2_dict = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
-                            pr = 0.3, AP_prob_function = sigmoid,
-                            refractory_period = 0.003)
+    #Ex + feedback
+    N_ex_2_dict = neuron_dict(name = 'N_ex_2',n_type='ex',M = 10, E = 5,
+                                pr = 0.3, AP_prob_function = sigmoid,
+                                refractory_period = 0.003)
+    N_post_2_dict = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
+                                pr = 0.3, AP_prob_function = sigmoid,
+                                refractory_period = 0.003)
 
-#Ex + inh, no feedback
-N_ex_3_dict = neuron_dict(name = 'N_ex_3', n_type = 'ex', M = 10, E = 5,
-                        pr = 0.6, kv = 0.01, AP_prob_function = sigmoid,
-                        AP_per_second = 10)
-N_inh_3_dict = neuron_dict(name = 'N_inh_3',n_type='inh_v', M = 10, E = 5,
-                         pr = 0.2, AP_prob_function = sigmoid,
-                         kv = -0.01, AP_per_second = 10)
-N_post_3_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
-                          kv = -0.02, AP_prob_function = sigmoid,
-                          refractory_period = 0.003, tau = 20)
-N_post_3_post_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
-                          kv = -0.02, AP_prob_function = sigmoid,
-                          refractory_period = 0.003, tau = 20)
-
-
-
-##MUST ATTACH A NEURON TO THE END OF ANY NEURON YOU WANT TO MEASURE VESICLES OF.
-##3 is connected after 2 so you can measure 2.  It's a measuring neuron
-
-args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict,
-                  N_ex_2_dict, N_post_2_dict]
-neuron_args_check(args_dict_list, template_args)
-
-#First network: E+I+F
-N_ex = Neuron(N_ex_dict)
-N_inh = Neuron(N_inh_dict)
-
-N_ex.firing_neuron = True
-N_inh.firing_neuron = True
-
-N_post = Neuron(N_post_dict)
-
-#Second network: E + F
-N_ex_2 = Neuron(N_ex_2_dict)
-N_ex_2.firing_neuron = True
-N_post_2 = Neuron(N_post_2_dict)
-
-#Third Network: E+I, no F
-N_ex_3 = Neuron(N_ex_3_dict)
-N_inh_3 = Neuron(N_inh_3_dict)
-
-N_ex_3.firing_neuron = True
-N_inh_3.firing_neuron = True
-
-N_post_3 = Neuron(N_post_3_dict)
-N_post_3_post = Neuron(N_post_3_post_dict)
-
-#Make connections
-c11 = [[N_ex, N_inh], N_post]
-c12 = [N_post, N_post]
-
-c21 = [N_ex_2, N_post_2]
-c22 = [N_post_2, N_post_2]
-
-c31 = [[N_ex_3, N_inh_3], N_post_3]
-c32 = [N_post_3, N_post_3_post]
+    #Ex + inh, no feedback
+    N_ex_3_dict = neuron_dict(name = 'N_ex_3', n_type = 'ex', M = 10, E = 5,
+                            pr = 0.6, kv = 0.01, AP_prob_function = sigmoid,
+                            AP_per_second = 10)
+    N_inh_3_dict = neuron_dict(name = 'N_inh_3',n_type='inh_v', M = 10, E = 5,
+                             pr = 0.2, AP_prob_function = sigmoid,
+                             kv = -0.01, AP_per_second = 10)
+    N_post_3_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
+                              kv = -0.02, AP_prob_function = sigmoid,
+                              refractory_period = 0.003, tau = 20)
+    N_post_3_post_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
+                              kv = -0.02, AP_prob_function = sigmoid,
+                              refractory_period = 0.003, tau = 20)
 
 
-connections_1 = [c11, c12]
-connections_2 = [c21, c22]
-connections_3 = [c31, c32]
 
-make_pre_post_connections(connections_1)
-make_pre_post_connections(connections_2)
-make_pre_post_connections(connections_3)
+    ##MUST ATTACH A NEURON TO THE END OF ANY NEURON YOU WANT TO MEASURE VESICLES OF.
+    ##3 is connected after 2 so you can measure 2.  It's a measuring neuron
 
-#Test duration
-n_seconds = 60*20 #60 seconds times 1 min/s
+    args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict,
+                      N_ex_2_dict, N_post_2_dict]
+    neuron_args_check(args_dict_list, template_args)
 
-full_neuron_list_1 = [N_ex, N_inh, N_post]
-full_neuron_list_2 = [N_ex_2, N_post_2]
-full_neuron_list_3 = [N_ex_3, N_inh_3, N_post_3, N_post_3_post]
-#MAIN TEST
-run_main_test(full_neuron_list_1, n_seconds)
-##run_main_test(full_neuron_list_2, n_seconds)
-run_main_test(full_neuron_list_3, n_seconds)
+    #First network: E+I+F
+    N_ex = Neuron(N_ex_dict)
+    N_inh = Neuron(N_inh_dict)
 
-##Plotting Results
+    N_ex.firing_neuron = True
+    N_inh.firing_neuron = True
 
-##plot_firing_times(firing_neurons_list, firing_times_dict)
+    N_post = Neuron(N_post_dict)
 
-N_post.get_T_star(plotting = False) #plotting = True plots T_star
-##N_post_2.get_T_star(plotting = True)
-N_post_3.get_T_star(plotting = False)
+    #Second network: E + F
+    N_ex_2 = Neuron(N_ex_2_dict)
+    N_ex_2.firing_neuron = True
+    N_post_2 = Neuron(N_post_2_dict)
 
-N_post.get_histogram(plotting = True)
-##N_post_2.get_histogram(plotting = True)
-N_post_3.get_histogram(plotting = True)
+    #Third Network: E+I, no F
+    N_ex_3 = Neuron(N_ex_3_dict)
+    N_inh_3 = Neuron(N_inh_3_dict)
 
-##x = sns.distplot(N_post_2.T_star, fit = scipy.stats.gamma)
+    N_ex_3.firing_neuron = True
+    N_inh_3.firing_neuron = True
+
+    N_post_3 = Neuron(N_post_3_dict)
+    N_post_3_post = Neuron(N_post_3_post_dict)
+
+    #Make connections
+    c11 = [[N_ex, N_inh], N_post]
+    c12 = [N_post, N_post]
+
+    c21 = [N_ex_2, N_post_2]
+    c22 = [N_post_2, N_post_2]
+
+    c31 = [[N_ex_3, N_inh_3], N_post_3]
+    c32 = [N_post_3, N_post_3_post]
+
+
+    connections_1 = [c11, c12]
+    connections_2 = [c21, c22]
+    connections_3 = [c31, c32]
+
+    make_pre_post_connections(connections_1)
+    make_pre_post_connections(connections_2)
+    make_pre_post_connections(connections_3)
+
+    #Test duration
+    n_seconds = 60*20 #60 seconds times 1 min/s
+
+    full_neuron_list_1 = [N_ex, N_inh, N_post]
+    full_neuron_list_2 = [N_ex_2, N_post_2]
+    full_neuron_list_3 = [N_ex_3, N_inh_3, N_post_3, N_post_3_post]
+    #MAIN TEST
+    run_main_test(full_neuron_list_1, n_seconds)
+    ##run_main_test(full_neuron_list_2, n_seconds)
+    run_main_test(full_neuron_list_3, n_seconds)
+
+    ##Plotting Results
+
+    ##plot_firing_times(firing_neurons_list, firing_times_dict)
+
+    N_post.get_T_star(plotting = False) #plotting = True plots T_star
+    ##N_post_2.get_T_star(plotting = True)
+    N_post_3.get_T_star(plotting = False)
+
+    N_post.get_histogram(plotting = False)
+    ##N_post_2.get_histogram(plotting = True)
+    N_post_3.get_histogram(plotting = False)
+
+    ##x = sns.distplot(N_post_2.T_star, fit = scipy.stats.gamma)
+    ##plt.show()
+    return (N_post.mean, N_post.CV, N_post.fano), \
+            (N_post_3.mean, N_post_3.CV, N_post_3.fano)
+
+mean_x = []
+cv_x = []
+fano_x = []
+
+mean_y = []
+cv_y = []
+fano_y = []
+
+for i in range(10):
+    x,y = comparison_function()
+    mean_x.append(x[0])
+    cv_x.append(x[1])
+    fano_x.append(x[2])
+
+    mean_y.append(y[0])
+    cv_y.append(y[1])
+    fano_y.append(y[2])
+
+fig, ax = plt.subplots(2,3)
+
+ax[0,0].plot(mean_x)
+ax[0,0].set_title('mean_x')
+ax[0,0].plot([1])
+ax[0,0].plot([0])
+ax[0,1].plot(cv_x)
+ax[0,1].plot([1])
+ax[0,1].plot([0])
+ax[0,1].set_title('cv_x')
+ax[0,2].plot(fano_x)
+ax[0,2].set_title('fano_x')
+ax[0,2].plot([1])
+ax[0,2].plot([0])
+
+ax[1,0].plot(mean_y)
+ax[1,0].set_title('mean_y')
+ax[1,0].plot([1])
+ax[1,0].plot([0])
+ax[1,1].plot(cv_y)
+ax[1,1].set_title('cv_y')
+ax[1,1].plot([1])
+ax[1,1].plot([0])
+ax[1,2].plot(fano_y)
+ax[1,2].set_title('fano_y')
+ax[1,2].plot([1])
+ax[1,2].plot([0])
+
 plt.show()
-
-
-
-
 
 ##If bottom peaks go to 0, it means that a presynaptic neuron tried to
 ##add voltage, but nothing happened because the neuron was within the
