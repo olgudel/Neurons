@@ -63,11 +63,12 @@
 #3. [X] Fano factor, variance over mean.  It's 1 for a poisson process.  How far
 #It deviates from that 
 
-#4. [ ] Look at correlation firing times.  For the same mean does having one input vs
-#two inputs which has higher noise.  Controlled comparison: One positive vs one positive
-#one negative, and the same output frequency.  Change parameters a bit.  Look at
-#The noise levels.  Hard to look at noise because mean is changing so much.
-#If fixed mean, higher mean by playing with parameters.  Higher threshold.
+#4. [ ] Look at correlation firing times.  For the same mean does having one
+# input vs two inputs which has higher noise.  Controlled comparison:
+# One positive vs one positive one negative, and the same output frequency.
+# Change parameters a bit.  Look at The noise levels.  Hard to look at
+# noise because mean is changing so much. If fixed mean, higher mean by
+# playing with parameters.  Higher threshold.
 
 #5. [ ] Each vesicle in the site.  It's released, the site becomes filled up again.
 #Refractory state for each site, it takes a while for the neuron to repair that site.
@@ -98,6 +99,7 @@ import seaborn as sns
 import sys
 import os
 import scipy
+import scipy.stats as st
 
 ###############################################################################
 ###############################################################################                
@@ -138,7 +140,7 @@ class Neuron:
         self.A, self.tau, self.other
     
     """
-    def __init__(self, neuron_args, n_tests):
+    def __init__(self, neuron_args):
 
         #Create all class attributes from the neuron_args dictionary.
         self.__dict__.update((k, v) for k, v in neuron_args.items())
@@ -152,7 +154,7 @@ class Neuron:
 ##        self.A, self.tau, self.other
 ##        
 
-        self.n_tests = n_tests
+
 
 
        
@@ -323,9 +325,14 @@ class Neuron:
             self.T_star.append(self.AP_time_history[i] - self.AP_time_history[i-1])
 
         self.T_star = np.array(self.T_star)
+        self.mean = np.mean(self.T_star)
+        self.CV = np.std(self.T_star)/self.mean
+        self.fano = np.var(self.T_star)/np.mean(self.T_star)
+
         
         if plotting == True:
             plt.plot(self.T_star, label = 'T_star')
+            
             plt.plot(np.mean(self.T_star) * np.ones(len(self.T_star)),
                      label = 'Mean (s) = {}'.format(np.around(
                          np.mean(self.T_star),3)))
@@ -658,165 +665,17 @@ def make_pre_post_connections(connection_list):
 
 
 
-def generate_AP_times(p_array, n_tests):
-    """
-
-    Function that generates the arrival
-    of action potentials in a particular instant.
-
-    Arguments
-    ---------
-    
-    p_array : (array_like) 
-               Each entry is a probability  of occurance for
-               the neuron action potential firing
-    n_tests : (int)
-              The number of total tests to run.
-    
-
-    Returns
-    -------
-
-    reactions_array : (array-like)
-                        A numpy array of the shape (n_tests,len(p_array))
-                        reactions_array[i] is the ith set of firing preneurons.
-                        
-    """
-    reactions_array = np.zeros((len(p_array), n_tests))
-    for j in range(n_tests):
-        x = np.random.uniform(0,1)
-        for i in range(len(p_array)):
-            if x <= p_array[i]:
-                reactions_array[i][j] = 1
-            else:
-                reactions_array[i][j] = 0
-                
-    return reactions_array.astype(int).T
 
 def generate_test_neurons(n, n_args_test):
     test_args = n_args_test.copy()
     neuron_dict = {}
     for i in range(1, n+1):
         test_args['name'] = 'n{}'.format(i)
-        neuron_dict[i] = Neuron(test_args, n_tests)
+        neuron_dict[i] = Neuron(test_args)
         
     return neuron_dict
 
 
-def update_network(firing_neurons, full_neuron_list, events):
-    """
-    Firing_neurons is a list of neurons, events is a list of 0's and 1's.
-    If the i-th event is a 1, fire firing_neurons[i], otherwise do nothing.
-    
-    It updates all the post neurons of the firing neurons.
-
-    Arguments
-    ---------
-
-    firing_neurons : (list)
-                     List of neurons
-    events : (list)
-            List of 0's and 1's that indicate whether or not firing_neurons[i]
-            will fire an action potential or not.
-
-
-        
-    MAY HAVE ISSUES IF NETWORK HAS FEEDBACK LOOPS WITH TOO HIGH A VOLTAGE
-    INCREASE SPACED TOO FAR AWAY.
-
-    INFINITE RECURSION        
-    
-    """
-
-
-    if len(firing_neurons) != len(events):
-        raise Exception('Firing neurons and events are not the same length.')
-
-
-    #Get all the active firing neurons for this instance.
-    active_firing_neurons = []
-    for i in range(len(events)):
-        if events[i] == 1:
-            active_firing_neurons.append(firing_neurons[i])
-
-    #Initiate action potentials from the active firing neurons.
-    #If post neurons after the pre neuron AP's reach a voltage over the threshold
-    #then initiate action potentials in those neurons and set their voltages to 0.
-    new_firing_neurons = set()
-    neurons_that_received_APs = set()
-    for FN in active_firing_neurons:
-        FN.AP()
-
-        #Add all the post neurons to the set of neurons that received APs
-        for post_neuron_name in FN.post().keys():
-            neurons_that_received_APs.add(post_neuron_name)
-            
-
-        #Add all post neurons that are over their thresholds to a set
-        for post_neuron_name in FN.post().keys():
-
-            post_neuron = FN.post()[post_neuron_name]
-
-            #NEED A SIGMOIDAL FUNCTION FOR THE AP_PROB_FUNCTION
-            #firing_probability = post_neuron.AP_prob_function(post_neuron.voltage())
-            #firing_decision = np.random.choice([0,1], 1, p = [1- firing_probability, firing_probability])
-            #if firing_decision[0] == 1:
-            #   FIRE THE NEURON OR DO SOMETHING
-            if post_neuron.voltage() >= post_neuron.vth:
-                new_firing_neurons.add(post_neuron_name)
-
-    new_firing_neurons = set([neuron for neuron in full_neuron_list if (neuron.name in new_firing_neurons)])
-    if new_firing_neurons != set():
-        new_firing_neurons = list(new_firing_neurons)
-        new_events = np.ones(len(new_firing_neurons))
-
-        update_network(new_firing_neurons, full_neuron_list, new_events) #Recursive step.
-        for neuron in new_firing_neurons:
-            neuron.fired_AP_check()
-
-
-##p_array = [0.2, 0.5, 0.8] 
-##n_tests = 1000
-##a = generate_AP_times(p_array, n_tests) #a[i] is the i-th instance of time
-
-
-def continue_no_AP_neurons(full_neuron_list):
-    """
-    All the neurons that didn't get an action potential have their
-    voltage contribution queues rotated.
-    """
-    for neuron in full_neuron_list:
-        if neuron.received_an_AP == False:
-            neuron.no_AP()
-        neuron.received_an_AP = False
-
-def initiate_APs_in_network(firing_neurons, event, full_neuron_list):
-    """
-
-    Groups together two functions:(1).update_network, and
-    (2.) continue_no_AP_neurons and calls them sequentially.
-
-    """
-
-    if len(firing_neurons) != len(event):
-        exception_str = 'Firing neuron list and events are not same length.'
-        raise Exception(exception_str)
-    
-    update_network(firing_neurons, full_neuron_list, event)
-    continue_no_AP_neurons(full_neuron_list)
-
-    #Update the histories
-    
-    for neuron in set(full_neuron_list) - set(firing_neurons):
-        if neuron.fired_an_AP == False:
-            neuron.voltage_history.append(neuron.voltage())
-            if neuron.counting_neuron == True:
-                neuron.T_star_count.append(0)
-        else:
-            neuron.voltage_history.append(neuron.vth)
-            if neuron.counting_neuron == True:
-                neuron.T_star_count.append(1)
- 
 def merge_dicts(*args):
     my_dict = {}
     for arg in args:
@@ -828,62 +687,6 @@ def generate_poisson_times(AP_rate):
     AP_times = np.cumsum(np.random.exponential( 1./AP_rate, size = int(AP_rate)))
     return AP_times
 
-
-def generate_AP_times_2(p_array, n_tests):
-    times_list = []
-    for p in p_array:
-        times = np.random.choice([0,1],
-                                 size = (n_tests),
-                                 p = [1-p, p])
-        times_list.append(times)
-
-    return np.array(times_list).T
-
-def generate_AP_times_3(AP_num_array, n_tests):
-    ratio_constant = n_tests / 1000
-    AP_nums_adjusted = []
-    for num in AP_num_array:
-        AP_nums_adjusted.append(int(ratio_constant * num))
-
-    time_array = []
-    for i,num in enumerate(AP_nums_adjusted):
-        ones = np.ones(num)
-        zeros = np.zeros(n_tests - num)
-        times = np.concatenate([ones, zeros])
-        np.random.shuffle(times)
-        time_array.append(times)
-
-    time_array = np.array(time_array)
-    #time_array = time_array.reshape((len(AP_num_array), n_tests))
-    return time_array, AP_nums_adjusted
-
-##a,b = generate_AP_times_3([300, 100], 500)
-##        
-##        
-##        
-##
-##    n_tests_new = ratio_constant * n_tests
-##    new_array
-##    
-    
-    
-def get_T_star(T_star_list):
-    """
-    Takes a T_star_list, which is a list of 0's and 1's, and counts the
-    number of 0's until a 1 occurs.  Returns the total number of counts
-    between each 1 occurance.
-    """
-
-    T_star = []
-    counter = 0
-    for i in range(len(T_star_list)):
-        if T_star_list[i] == 0:
-            counter += 1
-        else:
-            counter += 1
-            T_star.append(counter)
-            counter = 0
-    return T_star
 
 def sigmoid(v, y1=-13, y2=60, v0=0, vth=0.2):
     if v >= vth:  
@@ -1135,6 +938,32 @@ def run_main_test(full_neuron_list, n_seconds):
         #perform function
         print('\r{}%'.format(i * 100 / len(firing_times_names)), end='')
         sys.stdout.flush()
+
+
+def get_best_distribution(data):
+    dist_names = ["norm", "gamma", "exponweib", "weibull_max", "weibull_min", "pareto", "genextreme"]
+    dist_results = []
+    params = {}
+    for dist_name in dist_names:
+        dist = getattr(st, dist_name)
+        param = dist.fit(data)
+
+        params[dist_name] = param
+        # Applying the Kolmogorov-Smirnov test
+        D, p = st.kstest(data, dist_name, args=param)
+        print("p value for "+dist_name+" = "+str(p))
+        dist_results.append((dist_name, p))
+
+    # select the best fitted distribution
+    best_dist, best_p = (max(dist_results, key=lambda item: item[1]))
+    # store the name of the best fit and its p value
+
+    print("Best fitting distribution: "+str(best_dist))
+    print("Best p value: "+ str(best_p))
+    print("Parameters for the best fit: "+ str(params[best_dist]))
+
+    return best_dist, best_p, params[best_dist]
+
     
 ###############################################################################
 ###############################################################################                
@@ -2247,16 +2076,12 @@ def run_main_test(full_neuron_list, n_seconds):
 ###############################################################################
 ###############################################################################
 ###############################################################################
-
-n_tests = 1000 #means 1000 ms which is 1 second, 100000 means us
-
 parameter_args = ['name', 'n_type', 'M', 'E', 'k',
                   'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'AP_per_second',
                   'AP_length','refractory_period', 'A','tau','AP_prob_function',
                   'other']
 
 template_args = make_template(parameter_args)
-
 
 #Ex + inh + self-feedback
 N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5,
@@ -2267,15 +2092,15 @@ N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v', M = 10, E = 5,
                          kv = -0.01, AP_per_second = 10)
 N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5, pr = 0.3,
                           kv = -0.02, AP_prob_function = sigmoid,
-                          refractory_period = 0.001, tau = 20)
+                          refractory_period = 0.003, tau = 20)
 
 #Ex + feedback
 N_ex_2_dict = neuron_dict(name = 'N_ex_2',n_type='ex',M = 10, E = 5,
                             pr = 0.3, AP_prob_function = sigmoid,
-                            refractory_period = 0.001)
+                            refractory_period = 0.003)
 N_post_2_dict = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
                             pr = 0.3, AP_prob_function = sigmoid,
-                            refractory_period = 0.001)
+                            refractory_period = 0.003)
 
 #Ex + inh, no feedback
 N_ex_3_dict = neuron_dict(name = 'N_ex_3', n_type = 'ex', M = 10, E = 5,
@@ -2286,10 +2111,10 @@ N_inh_3_dict = neuron_dict(name = 'N_inh_3',n_type='inh_v', M = 10, E = 5,
                          kv = -0.01, AP_per_second = 10)
 N_post_3_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
                           kv = -0.02, AP_prob_function = sigmoid,
-                          refractory_period = 0.001, tau = 20)
+                          refractory_period = 0.003, tau = 20)
 N_post_3_post_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
                           kv = -0.02, AP_prob_function = sigmoid,
-                          refractory_period = 0.001, tau = 20)
+                          refractory_period = 0.003, tau = 20)
 
 
 
@@ -2301,28 +2126,28 @@ args_dict_list = [N_ex_dict, N_inh_dict, N_post_dict,
 neuron_args_check(args_dict_list, template_args)
 
 #First network: E+I+F
-N_ex = Neuron(N_ex_dict, n_tests)
-N_inh = Neuron(N_inh_dict, n_tests)
+N_ex = Neuron(N_ex_dict)
+N_inh = Neuron(N_inh_dict)
 
 N_ex.firing_neuron = True
 N_inh.firing_neuron = True
 
-N_post = Neuron(N_post_dict, n_tests)
+N_post = Neuron(N_post_dict)
 
 #Second network: E + F
-N_ex_2 = Neuron(N_ex_2_dict, n_tests)
+N_ex_2 = Neuron(N_ex_2_dict)
 N_ex_2.firing_neuron = True
-N_post_2 = Neuron(N_post_2_dict, n_tests)
+N_post_2 = Neuron(N_post_2_dict)
 
 #Third Network: E+I, no F
-N_ex_3 = Neuron(N_ex_3_dict, n_tests)
-N_inh_3 = Neuron(N_inh_3_dict, n_tests)
+N_ex_3 = Neuron(N_ex_3_dict)
+N_inh_3 = Neuron(N_inh_3_dict)
 
 N_ex_3.firing_neuron = True
 N_inh_3.firing_neuron = True
 
-N_post_3 = Neuron(N_post_3_dict, n_tests)
-N_post_3_post = Neuron(N_post_3_post_dict, n_tests)
+N_post_3 = Neuron(N_post_3_dict)
+N_post_3_post = Neuron(N_post_3_post_dict)
 
 #Make connections
 c11 = [[N_ex, N_inh], N_post]
@@ -2344,26 +2169,26 @@ make_pre_post_connections(connections_2)
 make_pre_post_connections(connections_3)
 
 #Test duration
-n_seconds = 60*10 #60 seconds times 1 min/s
+n_seconds = 60*20 #60 seconds times 1 min/s
 
 full_neuron_list_1 = [N_ex, N_inh, N_post]
 full_neuron_list_2 = [N_ex_2, N_post_2]
 full_neuron_list_3 = [N_ex_3, N_inh_3, N_post_3, N_post_3_post]
 #MAIN TEST
 run_main_test(full_neuron_list_1, n_seconds)
-run_main_test(full_neuron_list_2, n_seconds)
+##run_main_test(full_neuron_list_2, n_seconds)
 run_main_test(full_neuron_list_3, n_seconds)
 
 ##Plotting Results
 
 ##plot_firing_times(firing_neurons_list, firing_times_dict)
 
-N_post.get_T_star(plotting = True) #plotting = True plots T_star
-N_post_2.get_T_star(plotting = True)
-N_post_3.get_T_star(plotting = True)
+N_post.get_T_star(plotting = False) #plotting = True plots T_star
+##N_post_2.get_T_star(plotting = True)
+N_post_3.get_T_star(plotting = False)
 
 N_post.get_histogram(plotting = True)
-N_post_2.get_histogram(plotting = True)
+##N_post_2.get_histogram(plotting = True)
 N_post_3.get_histogram(plotting = True)
 
 ##x = sns.distplot(N_post_2.T_star, fit = scipy.stats.gamma)
@@ -2388,31 +2213,7 @@ plt.show()
 ##plot_vesicles(N_ex)
 ##plot_vesicles(N_post)
 
-##import scipy.stats as st
-##def get_best_distribution(data):
-##    dist_names = ["norm", "gamma", "exponweib", "weibull_max", "weibull_min", "pareto", "genextreme"]
-##    dist_results = []
-##    params = {}
-##    for dist_name in dist_names:
-##        dist = getattr(st, dist_name)
-##        param = dist.fit(data)
-##
-##        params[dist_name] = param
-##        # Applying the Kolmogorov-Smirnov test
-##        D, p = st.kstest(data, dist_name, args=param)
-##        print("p value for "+dist_name+" = "+str(p))
-##        dist_results.append((dist_name, p))
-##
-##    # select the best fitted distribution
-##    best_dist, best_p = (max(dist_results, key=lambda item: item[1]))
-##    # store the name of the best fit and its p value
-##
-##    print("Best fitting distribution: "+str(best_dist))
-##    print("Best p value: "+ str(best_p))
-##    print("Parameters for the best fit: "+ str(params[best_dist]))
-##
-##    return best_dist, best_p, params[best_dist]
-##
+
 ##get_best_distribution(N_post_2.T_star)
 
 
