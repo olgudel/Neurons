@@ -2238,10 +2238,10 @@ def comparison_function():
     #Ex + inh + self-feedback
     N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5,
                             pr = 0.6, kv = 0.01, AP_prob_function = sigmoid,
-                            AP_per_second = 40)
+                            AP_per_second = 100)
     N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v', M = 10, E = 5,
                              pr = 0.2, AP_prob_function = sigmoid,
-                             kv = -0.01, AP_per_second = 40)
+                             kv = -0.03, AP_per_second = 100)
     N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5,
                               pr = 0.3, kv = -0.03, AP_prob_function = sigmoid,
                               refractory_period = 0.003, tau = 20,
@@ -2259,15 +2259,15 @@ def comparison_function():
     #Ex + inh, no feedback
     N_ex_3_dict = neuron_dict(name = 'N_ex_3', n_type = 'ex', M = 10, E = 5,
                             pr = 0.6, kv = 0.01, AP_prob_function = sigmoid,
-                            AP_per_second = 40)
+                            AP_per_second = 100)
     N_inh_3_dict = neuron_dict(name = 'N_inh_3',n_type='inh_v', M = 10, E = 5,
                              pr = 0.2, AP_prob_function = sigmoid,
-                             kv = -0.01, AP_per_second = 40)
+                             kv = -0.03, AP_per_second = 100)
     N_post_3_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
-                              kv = -0.02, AP_prob_function = \
-                                partial(sigmoid, vth = 0.262),
+                              kv = -0.03, AP_prob_function = \
+                                partial(sigmoid, vth = 0.29),
                               refractory_period = 0.003, tau = 20,
-                                vth = 0.262)
+                                vth = 0.29)
     N_post_3_post_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
                               kv = -0.02, AP_prob_function = sigmoid,
                               refractory_period = 0.003, tau = 20)
@@ -2360,7 +2360,7 @@ mean_y = []
 cv_y = []
 fano_y = []
 
-n_tests = 5
+n_tests = 3
 for i in range(n_tests):
     print(i+1, ' of ', n_tests)
     N_post, N_post_3, x,y = comparison_function()
