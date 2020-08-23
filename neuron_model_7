@@ -2324,28 +2324,28 @@ def comparison_function(n_type, p_name, value, n_seconds):
     firing_inh = 20
     v_thresh = 0.2
     kv_ex = 0.01
-    kv_inh = -0.02
+    kv_inh = -0.01
     kv_fb = -0.02
 
     if n_type == 'fb':
-        if p_name == 'v_thresh_fb':
+        if p_name == 'v_thresh':
             v_thresh = value
-        if p_name == 'firing_ex_fb':
+        if p_name == 'firing_ex':
             firing_ex = value
-        if p_name == 'firing_inh_fb':
+        if p_name == 'firing_inh':
             firing_inh = value
-        if p_name == 'kv_ex_fb':
-            kv_ex == value
-        if p_name == 'kv_inh_fb':
-            v_inh == value
+        if p_name == 'kv_ex':
+            kv_ex = value
+        if p_name == 'kv_inh':
+            kv_inh = value
         if p_name == 'kv_fb':
-            kv_fb == value            
+            kv_fb = value            
 
     N_ex_dict = neuron_dict(name = 'N_ex', n_type = 'ex', M = 10, E = 5,
                             pr = 0.6, kv = kv_ex, AP_prob_function = sigmoid,
                             AP_per_second = firing_ex)
     N_inh_dict = neuron_dict(name = 'N_inh',n_type='inh_v', M = 10, E = 5,
-                             pr = 0.2, AP_prob_function = sigmoid,
+                             pr = 0.3, AP_prob_function = sigmoid,
                              kv = kv_inh, AP_per_second = firing_inh)
     N_post_dict = neuron_dict(name = 'N_post',n_type='ex',M = 10, E = 5,
                               pr = 0.3, kv = kv_fb, AP_prob_function =
@@ -2360,31 +2360,32 @@ def comparison_function(n_type, p_name, value, n_seconds):
     v_thresh = 0.2
 
     kv_ex = 0.01
-    kv_inh = -0.02
+    kv_inh = -0.01
 
     if n_type == 'nfb':
         if p_name == 'v_thresh':
-            v_thresh == value
+            v_thresh = value
         if p_name == 'firing_ex':
             firing_ex = value
         if p_name == 'firing_inh':
             firing_inh = value
         if p_name == 'kv_ex':
-            kv_ex == value
+            kv_ex = value
         if p_name == 'kv_inh':
-            v_inh == value   
+            kv_inh = value   
 
     N_ex_3_dict = neuron_dict(name = 'N_ex_3', n_type = 'ex', M = 10, E = 5,
                             pr = 0.6, kv = kv_ex, AP_prob_function = sigmoid,
                             AP_per_second = firing_ex)
     N_inh_3_dict = neuron_dict(name = 'N_inh_3',n_type='inh_v', M = 10, E = 5,
-                             pr = 0.2, AP_prob_function = sigmoid,
+                             pr = 0.4, AP_prob_function = sigmoid,
                              kv = kv_inh, AP_per_second = firing_inh)
-    N_post_3_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
-                              kv = -0.04, AP_prob_function = \
+    N_post_3_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5,
+                                pr = 0.3, kv = -0.04, AP_prob_function = \
                                 partial(sigmoid, vth = v_thresh),
                               refractory_period = 0.003, tau = 20,
                                 vth = v_thresh)
+
     N_post_3_post_dict = neuron_dict(name = 'N_post_3',n_type='ex',M = 10, E = 5, pr = 0.3,
                               kv = -0.02, AP_prob_function = sigmoid,
                               refractory_period = 0.003, tau = 20)
@@ -2456,6 +2457,7 @@ def comparison_function(n_type, p_name, value, n_seconds):
 
     N_post_3 = Neuron(N_post_3_dict)
     N_post_3_post = Neuron(N_post_3_post_dict)
+
 
     #Fourth network: E, no F
     N_ex_4 = Neuron(N_ex_4_dict)
@@ -2559,15 +2561,15 @@ autocorr_y = []
 
 
 n_type = 'fb'
-p_name = 'v_thresh_fb'
-values = np.linspace(0.1, 0.5, 10)
+p_name = 'kv_inh'
+values = np.linspace(-0.05, -0.01, 10)
 
 for i in range(len(values)):
-    print('\n',i+1, ' of ', len(values))
+    print('\nTest #',i+1, ' of ', len(values))
     N_post, N_post_3, x,y = comparison_function(n_type = n_type,
                                                 p_name = p_name,
                                                 value = values[i],
-                                                n_seconds = 60 * 5)
+                                                n_seconds = 60*2)
     mean_x.append(x[0])
     cv_x.append(x[1])
     fano_x.append(x[2])
@@ -2581,13 +2583,13 @@ for i in range(len(values)):
 variables_fb = [mean_x, cv_x, fano_x, autocorr_x]
 variables_nfb = [mean_y, cv_y, fano_y, autocorr_y]
 
+names_fb = ['mean_fb', 'cv_fb', 'fano_fb', 'autocorr_fb']
+names_nfb = ['mean', 'cv', 'fano', 'autocorr']
+
 fig, ax = plt.subplots(1,4)
 fig.suptitle('Varying \"{}\" from {} to {} in {} increments'.format(
               p_name, np.around(values[0], 2), np.around(values[-1],2),
               len(values)))
-
-names_fb = ['mean_fb', 'cv_fb', 'fano_fb', 'autocorr_fb']
-names_nfb = ['mean', 'cv', 'fano', 'autocorr']
 
 for i in range(4):
     ax[i].set_title(names_nfb[i])
@@ -2597,9 +2599,15 @@ for i in range(4):
     if i == 3:
         ax[i].plot([values[0]], [1])
         ax[i].plot([values[1]], [-1])
-    ax[i].plot(values, variables_fb[i], label = names_fb[i], color = 'blue')
-    ax[i].plot(values, np.mean(variables_nfb[i])*np.ones(len(variables_nfb[i])),
-               label = names_nfb[i], color = 'red')
+
+    if n_type == 'fb':
+        ax[i].plot(values, variables_fb[i], label = names_fb[i], color = 'blue')
+        ax[i].plot(values, np.mean(variables_nfb[i])*np.ones(len(variables_nfb[i])),
+                   label = names_nfb[i], color = 'red')
+    if n_type == 'nfb':
+        ax[i].plot(values, variables_nfb[i], label = names_nfb[i], color = 'red')
+        ax[i].plot(values, np.mean(variables_fb[i])*np.ones(len(variables_fb[i])),
+                   label = names_fb[i], color = 'blue')
     ax[i].legend()
 plt.show()
 
