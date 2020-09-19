@@ -1,4 +1,5 @@
 def main_program(string_input):
+    import random
 
     initial_state = string_input[:-2]
     algorithm_char = string_input[-1]
@@ -18,7 +19,7 @@ def run_algorithm(initial_state,goal_state,  algorithm_char):
     return result
 
 def run_a_star_algorithm(string, desired_string):
-    return pass
+    return None
 
 
 
@@ -53,22 +54,6 @@ def flip_string(string, flip_position):
 
     return new_string
     
-initial_state = '3b2w4w1b'
-flip_position = 4
-flip_string(initial_state, flip_position)
-
-class Pancake:
-    def __init__(self, number, pancake_char):
-        self._number = number
-        self._type= pancake_char
-        self._prev = None
-        self._next = None
-
-
-class PancakeList:
-    def __init__(self)
-
-
 
 class LinkedQueue:
     
@@ -125,23 +110,20 @@ class Node:
 ##q = LinkedQueue()
 ##q.enqueue(Node(0, None, None, None))
 
+def expand(node):
+    state = node.state
+    flip_positions = random.sample(range(1,5), 4)
+    flips = [Node(flip_string(state, flip_position), parent = node,
+                  action = None, path_cost = None)  for \
+             flip_position in flip_positions]
+    return flips
+
 def run_BFS_algorithm(initial_state, goal_state):
-    
-    def expand(node):
-        state = node.state
-        flips = [Node(flip_string(state, flip_position), parent = node,
-                      action = None, path_cost = None)  for \
-                    flip_position in range(1,5)]
-        return flips
-
-
-        
+       
     initial_node = Node(state = initial_state, parent = None,
                         action = None, path_cost = None)
-
-    expand(initial_node)
-    
-    if state == goal_state:
+   
+    if initial_node.state == goal_state:
         return initial_node
     frontier = LinkedQueue()
     frontier.enqueue(initial_node)
@@ -150,15 +132,16 @@ def run_BFS_algorithm(initial_state, goal_state):
         node = frontier.dequeue()
         for child_node in expand(node):
             child_state = child_node.state
+            print(child_state)
             if child_state == goal_state:
-                return child
+                return child_node
             if child_state not in reached:
                 reached.add(child_state)
                 frontier.enqueue(child_node)
+    return reached
 
 
-string_input = '3b2w4w1b-b'
-
-
-run_main_algorithm(string_input)
+string_input = '4b3b2b1b-b'
+print(string_input)
+reached = main_program(string_input)
     
