@@ -1,3 +1,5 @@
+import random
+
 ################################################################################
 ################################################################################
 #
@@ -14,8 +16,8 @@ def main_program(string_input):
     
     goal_node = run_algorithm(initial_state, goal_state, algorithm_char)
 
-    display_output(goal_node, string_input, algorithm_char)
-
+    node_list = display_output(goal_node, string_input, algorithm_char)
+    return node_list
             
 def run_algorithm(initial_state,goal_state,  algorithm_char):
     if algorithm_char == 'a':
@@ -23,28 +25,6 @@ def run_algorithm(initial_state,goal_state,  algorithm_char):
     if algorithm_char == 'b':
         result = run_BFS_algorithm(initial_state, goal_state, algorithm_char)
     return result
-
-def run_BFS_algorithm(initial_state, goal_state, algorithm_char):
-       
-    initial_node = Node(state = initial_state, parent = None,
-                        action = None, cost = None)
-   
-    if initial_node.state == goal_state:
-        return initial_node
-    frontier = LinkedQueue()
-    frontier.enqueue(initial_node)
-        
-    reached = set([initial_node.state])
-    while not frontier.is_empty():
-        node = frontier.dequeue()
-        for child_node, flip_position in expand(node, algorithm_char):
-            child_state = child_node.state
-            if child_state == goal_state:
-                return child_node
-            if child_state not in reached:
-                reached.add(child_state)
-                frontier.enqueue(child_node)
-    return reached
 
 def run_a_star_algorithm(initial_state, goal_state, algorithm_char):
     
@@ -74,12 +54,36 @@ def run_a_star_algorithm(initial_state, goal_state, algorithm_char):
 ##                print(child_state, 'g: ', child_node.path_cost,
 ##                      'h: ', child_node.cost)
 
+def run_BFS_algorithm(initial_state, goal_state, algorithm_char):
+       
+    initial_node = Node(state = initial_state, parent = None,
+                        action = None, cost = None)
+   
+    if initial_node.state == goal_state:
+        return initial_node
+    frontier = LinkedQueue()
+    frontier.enqueue(initial_node)
+        
+    reached = set([initial_node.state])
+    while not frontier.is_empty():
+        node = frontier.dequeue()
+        for child_node, flip_position in expand(node, algorithm_char):
+            child_state = child_node.state
+            if child_state == goal_state:
+                return child_node
+            if child_state not in reached:
+                reached.add(child_state)
+                frontier.enqueue(child_node)
+    return reached
+
+
+
 def expand(node, algorithm_char):
     
     if algorithm_char == 'b':
         
         state = node.state
-        flip_positions = [1,2,3,4]
+        flip_positions = random.sample([1,2,3,4], 4)
         flips = [Node(flip_string(state, flip_position), parent = node,
                       action = None, cost = None, location = flip_position) for flip_position in flip_positions]
         return zip(flips, flip_positions)
@@ -87,7 +91,7 @@ def expand(node, algorithm_char):
     if algorithm_char == 'a':
         
         state = node.state
-        flip_positions = [1,2,3,4]
+        flip_positions = random.sample([1,2,3,4], 4)
         flips = [Node(flip_string(state, flip_position), parent = node,
                       action = None, cost = flip_position,
                       location = flip_position)\
@@ -102,12 +106,12 @@ def f_eval_a_star(child_node, heuristic, goal_state):
 
 def heuristic(string):
     order = list(map(int, list(string[::2])))
-    proper_order = [1,2,3,4]
     heuristic_cost = 0
     for i in range(4):
-        if proper_order[i] is not order[i]:
-            heuristic_cost = max(order[i], heuristic_cost)
+        if order[i] != i+1:
+            heuristic_cost = max(heuristic_cost, order[i])
     return heuristic_cost
+    
 
 def insert_line_into_string(string, position):
     return ''.join((string[:2*position], '|', string[2*position:]))
@@ -144,12 +148,10 @@ def flip_string(string, flip_position):
 
     return new_string
     
-
-    
-
 def display_output(node, string_input, algorithm_char):
 
     if algorithm_char == 'b':
+
 
         state_list = []
         split_list = []
@@ -158,6 +160,7 @@ def display_output(node, string_input, algorithm_char):
             state_list.append(node.state)
             split_list.append(node.location)
             node = node.parent
+            
             
         state_list.append(string_input[:-2])
 
@@ -171,31 +174,33 @@ def display_output(node, string_input, algorithm_char):
 
     if algorithm_char == 'a':
 
+
         state_list = []
         split_list = []
         path_cost_list = []
-        cost_list = []
+        heuristic_list = []
         
         while node.parent != None:
             state_list.append(node.state)
             split_list.append(node.location)
             path_cost_list.append(node.path_cost)
-            cost_list.append(node.cost)
+            heuristic_list.append(heuristic(node.state))
             node = node.parent
             
         state_list.append(string_input[:-2])
         path_cost_list.append(0)
-        cost_list.append(0)
+        heuristic_list.append(0)
 
         state_list.reverse()
         split_list.reverse()
         path_cost_list.reverse()
-        cost_list.reverse()
+        heuristic_list.reverse()
 
         for i in range(len(split_list)):
             print_string = insert_line_into_string(state_list[i], split_list[i])
-            print(print_string, 'g:', path_cost_list[i], ', h:', cost_list[i])
-        print(state_list[-1], 'g:', path_cost_list[-1], ', h:', cost_list[-1])
+            print(print_string, 'g:', path_cost_list[i], ', h:', heuristic_list[i])
+        print(state_list[-1], 'g:', path_cost_list[-1], ', h:', heuristic_list[-1])
+
 
 ################################################################################
 ################################################################################
@@ -258,6 +263,7 @@ class Node:
         self.cost = cost
         self.location = location
         self.path_cost = 0
+        
     def __lt__(self, other):
         return self.path_cost < other.path_cost
 
@@ -442,6 +448,8 @@ class PositionalList(_DoublyLinkedBase):
 ################################################################################
 ################################################################################
 
-string_input = '1b2w3b4b-a'
-main_program(string_input)
+string_input = '1w2b3w4b-a'
+node_list = main_program(string_input)
 
+
+    
