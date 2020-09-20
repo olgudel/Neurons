@@ -5,11 +5,9 @@ def main_program(string_input):
     algorithm_char = string_input[-1]
     goal_state = '1w2w3w4w'
     
-    result = run_algorithm(initial_state, goal_state, algorithm_char)
-    
-    return result
+    goal_node = run_algorithm(initial_state, goal_state, algorithm_char)
 
-
+    display_output(goal_node, string_input)
             
 def run_algorithm(initial_state,goal_state,  algorithm_char):
     if algorithm_char == 'a':
@@ -21,6 +19,8 @@ def run_algorithm(initial_state,goal_state,  algorithm_char):
 def run_a_star_algorithm(string, desired_string):
     return None
 
+def insert_line_into_string(string, position):
+    return ''.join((string[:2*position], '|', string[2*position:]))
 
 
 def flip_string(string, flip_position):
@@ -101,11 +101,12 @@ class LinkedQueue:
         self._size += 1
 
 class Node:
-    def __init__(self, state, parent, action, path_cost):
+    def __init__(self, state, parent, action, path_cost, location = None):
         self.state = state
         self.parent = parent
         self.action = action
         self.path_cost = path_cost
+        self.location = location
 
 ##q = LinkedQueue()
 ##q.enqueue(Node(0, None, None, None))
@@ -114,9 +115,9 @@ def expand(node):
     state = node.state
     flip_positions = random.sample(range(1,5), 4)
     flips = [Node(flip_string(state, flip_position), parent = node,
-                  action = None, path_cost = None)  for \
-             flip_position in flip_positions]
-    return flips
+                  action = None, path_cost = None, location = flip_position)\
+             for flip_position in flip_positions]
+    return zip(flips, flip_positions)
 
 def run_BFS_algorithm(initial_state, goal_state):
        
@@ -127,12 +128,15 @@ def run_BFS_algorithm(initial_state, goal_state):
         return initial_node
     frontier = LinkedQueue()
     frontier.enqueue(initial_node)
-    reached = set(initial_node.state)
+    
+    fringe = LinkedQueue()
+    fringe.enqueue(initial_node)
+    
+    reached = set([initial_node.state])
     while not frontier.is_empty():
         node = frontier.dequeue()
-        for child_node in expand(node):
+        for child_node, flip_position in expand(node):
             child_state = child_node.state
-            print(child_state)
             if child_state == goal_state:
                 return child_node
             if child_state not in reached:
@@ -140,8 +144,27 @@ def run_BFS_algorithm(initial_state, goal_state):
                 frontier.enqueue(child_node)
     return reached
 
+def display_output(node, string_input):
 
-string_input = '4b3b2b1b-b'
-print(string_input)
-reached = main_program(string_input)
+    state_list = []
+    split_list = []
     
+    while node.parent != None:
+        state_list.append(node.state)
+        split_list.append(node.location)
+        node = node.parent
+        
+    state_list.append(string_input[:-2])
+
+    state_list.reverse()
+    split_list.reverse()
+
+    for i in range(len(split_list)):
+        print_string = insert_line_into_string(state_list[i], split_list[i])
+        print(print_string)
+    print(state_list[-1])
+
+
+string_input = '4b2w1b3b-b'
+main_program(string_input)
+
