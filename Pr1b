@@ -1,18 +1,19 @@
+################################################################################
+#
+#                           Import Libraries
+#
+################################################################################
+
 import cv2
 import numpy as np
 import os
 import matplotlib.pyplot as plt
 
-address = r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642- Computer Vision'
-
-os.chdir(address)
-
-img = cv2.imread('img.jpg', 0)
-#img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-
-#Created copy so not to modify image
-img_mod = img.copy()
+################################################################################
+#
+#                           Functions
+#
+################################################################################
 
 def click_function(the_image):
     #Click: UL UR LL LR
@@ -51,23 +52,6 @@ def click_function(the_image):
     cv2.destroyAllWindows()
 
     return coords
-    
-
-#Perspective
-img_mod = img.copy()
-coords = click_function(img_mod)
-
-coords2 = click_function(img_mod)
-pts2 = np.array(coords2).astype(np.float32)
-
-size_x, size_y = img_mod.shape
-
-pts1 = np.array(coords).astype(np.float32)
-##pts2 = np.float32([[0,0],[size_x,0],[0,size_y],[size_x, size_y]])
-
-M_per = cv2.getPerspectiveTransform(pts1,pts2)
-
-dst_per = cv2.warpPerspective(img, M_per, (size_x, size_y))
 
 def make_aff_matrices(pts, pts2):
     aff_matrix = []
@@ -107,6 +91,37 @@ def make_per_matrices(pts, pts2):
 
 def pseudo_inv(A,b):
     return ((np.linalg.inv(A.T@A))@A)@b
+
+################################################################################
+#
+#                           Main Code
+#
+################################################################################
+
+address = r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642- Computer Vision'
+
+os.chdir(address)
+
+#Load image
+img = cv2.imread('img.jpg', 0)
+
+#Created copy so not to modify image
+img_mod = img.copy()
+
+
+#Perspective
+img_mod = img.copy()
+coords = click_function(img_mod)
+coords2 = click_function(img_mod)
+
+size_x, size_y = img_mod.shape
+
+pts1 = np.array(coords).astype(np.float32)
+pts2 = np.array(coords2).astype(np.float32)
+
+M_per = cv2.getPerspectiveTransform(pts1,pts2)
+
+dst_per = cv2.warpPerspective(img, M_per, (size_x, size_y))
 
 matching_1 = click_function(img_mod)
 matching_1 = np.array(matching_1).astype(np.float32)
