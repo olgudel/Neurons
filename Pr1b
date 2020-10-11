@@ -169,7 +169,6 @@ matching_1 = np.array(matching_1).astype(np.float32)
 matching_2 = click_function(dst_aff)
 matching_2 = np.array(matching_2).astype(np.float32)
 
-
 A,b = make_aff_matrices(matching_1, matching_2)
 
 aff_matrix = np.linalg.inv(A)@b
@@ -200,7 +199,7 @@ pts2 = np.array(coords2).astype(np.float32)
 
 M_per2 = cv2.getPerspectiveTransform(pts1,pts2)
 
-dst_per = cv2.warpPerspective(img, M_per2, (size_x, size_y))
+dst_per2 = cv2.warpPerspective(img, M_per2, (size_x, size_y))
 
 #For the second two sessions click more than four points.
 matching_1 = click_function(img_mod)
@@ -211,12 +210,11 @@ matching_2 = np.array(matching_2).astype(np.float32)
 A,b = make_per_matrices(matching_1, matching_2)
 
 per_matrix2 = pseudo_inv(A,b)
-per_matrix2 /= per_matrix2[-1][-1]
 per_matrix2 = per_matrix2.reshape((3,3))
 
 plt.suptitle('Perspective: {}'.format(coords))
 plt.subplot(121),plt.imshow(img),plt.title('Input')
-plt.subplot(122),plt.imshow(dst_per),plt.title('Output')
+plt.subplot(122),plt.imshow(dst_per2),plt.title('Output')
 plt.show()
 
 
@@ -239,7 +237,6 @@ matching_1 = np.array(matching_1).astype(np.float32)
 matching_2 = click_function(dst_per)
 matching_2 = np.array(matching_2).astype(np.float32)
 
-
 A,b = make_aff_matrices(matching_1, matching_2)
 
 aff_matrix2 = pseudo_inv(A,b)
@@ -253,15 +250,16 @@ plt.show()
 #                          Problem 2.c
 #------------------------------------------------------------------------------
 
-per_error = np.sum(np.abs(M_per - per_matrix))
-aff_error = np.sum(np.abs(M_aff - aff_matrix))
+def reshape_per_matrix(per_matrix):
+    x = list((per_matrix.reshape(-1,)).copy())
+    x.append(1)
+    x = np.array(x).reshape((3,3))
+    return x
+
+
+per_error = np.sum(np.abs(M_per - reshape_per_matrix(per_matrix)))
+aff_error = np.sum(np.abs(M_aff - aff_matrix.reshape((2,3))))
 
 #------------------------------------------------------------------------------
 #                          Problem 2.d
 #------------------------------------------------------------------------------
-
-
-#------------------------------------------------------------------------------
-#                          Problem 2.e
-#------------------------------------------------------------------------------
-
