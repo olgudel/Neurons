@@ -154,27 +154,25 @@ plt.show()
 img_mod = img.copy()
 coords_1 = click_function(img_mod)
 coords_2 = click_function(img_mod)
-rows,cols, = img.shape
+rows,cols = img.shape
 
 pts1 = np.array(coords_1).astype(np.float32)
 pts2 = np.array(coords_2).astype(np.float32)
 
 M_aff = cv2.getAffineTransform(pts1,pts2)
-M_aff /= M_aff[-1][-1]
 
 dst_aff = cv2.warpAffine(img,M_aff,(cols,rows))
 
 
 matching_1 = coords_1
 matching_1 = np.array(matching_1).astype(np.float32)
-matching_2 = click_function(dst_per)
+matching_2 = click_function(dst_aff)
 matching_2 = np.array(matching_2).astype(np.float32)
 
 
 A,b = make_aff_matrices(matching_1, matching_2)
 
 aff_matrix = np.linalg.inv(A)@b
-aff_matrix /= aff_matrix[-1][-1]
 
 plt.suptitle('Affine {}'.format(coords))
 plt.subplot(121),plt.imshow(img),plt.title('Input')
@@ -200,10 +198,9 @@ size_x, size_y = img_mod.shape
 pts1 = np.array(coords).astype(np.float32)
 pts2 = np.array(coords2).astype(np.float32)
 
-M_per = cv2.getPerspectiveTransform(pts1,pts2)
-M_per /= M_per[-1][-1]
+M_per2 = cv2.getPerspectiveTransform(pts1,pts2)
 
-dst_per = cv2.warpPerspective(img, M_per, (size_x, size_y))
+dst_per = cv2.warpPerspective(img, M_per2, (size_x, size_y))
 
 #For the second two sessions click more than four points.
 matching_1 = click_function(img_mod)
@@ -213,8 +210,9 @@ matching_2 = np.array(matching_2).astype(np.float32)
 
 A,b = make_per_matrices(matching_1, matching_2)
 
-per_matrix = pseudo_inv(A,b)
-per_matrix /= per_matrix[-1][-1]
+per_matrix2 = pseudo_inv(A,b)
+per_matrix2 /= per_matrix2[-1][-1]
+per_matrix2 = per_matrix2.reshape((3,3))
 
 plt.suptitle('Perspective: {}'.format(coords))
 plt.subplot(121),plt.imshow(img),plt.title('Input')
@@ -231,9 +229,9 @@ rows,cols, = img.shape
 pts1 = np.array(coords_1).astype(np.float32)
 pts2 = np.array(coords_2).astype(np.float32)
 
-M_aff = cv2.getAffineTransform(pts1,pts2)
+M_aff2 = cv2.getAffineTransform(pts1,pts2)
 
-dst_aff = cv2.warpAffine(img,M_aff,(cols,rows))
+dst_aff = cv2.warpAffine(img,M_aff2,(cols,rows))
 
 
 matching_1 = click_function(img_mod)
@@ -244,8 +242,7 @@ matching_2 = np.array(matching_2).astype(np.float32)
 
 A,b = make_aff_matrices(matching_1, matching_2)
 
-aff_matrix = pseudo_inv(A,b)
-aff_matrix = aff_matrix.reshape
+aff_matrix2 = pseudo_inv(A,b)
 
 plt.suptitle('Affine {}'.format(coords))
 plt.subplot(121),plt.imshow(img),plt.title('Input')
@@ -258,3 +255,13 @@ plt.show()
 
 per_error = np.sum(np.abs(M_per - per_matrix))
 aff_error = np.sum(np.abs(M_aff - aff_matrix))
+
+#------------------------------------------------------------------------------
+#                          Problem 2.d
+#------------------------------------------------------------------------------
+
+
+#------------------------------------------------------------------------------
+#                          Problem 2.e
+#------------------------------------------------------------------------------
+
