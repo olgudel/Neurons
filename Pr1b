@@ -61,14 +61,18 @@ def make_aff_matrices(pts, pts2):
         aff_matrix.append(r1)
         aff_matrix.append(r2)
 
+    aff_matrix = np.array(aff_matrix).astype(np.float32)
+
     points_vector = []
     for x,y in pts2:
         points_vector.append(x)
         points_vector.append(y)
+
+    points_vector = np.array(points_vector).astype(np.float32)
+    points_vector = points_vector.reshape((len(points_vector),1))
     
         
-    return np.array(aff_matrix).astype(np.float32), \
-           np.array(points_vector).astype(np.float32)
+    return aff_matrix, points_vector
 
 
 def make_per_matrices(pts, pts2):
@@ -79,24 +83,33 @@ def make_per_matrices(pts, pts2):
         per_matrix.append(r1)
         per_matrix.append(r2)
 
+    per_matrix = np.array(per_matrix).astype(np.float32)
+
     points_vector = []
     for x,y in pts2:
         points_vector.append(x)
         points_vector.append(y)
+
+    points_vector = np.array(points_vector).astype(np.float32)
+    points_vector = points_vector.reshape((len(points_vector),1))
     
         
-    return np.array(per_matrix).astype(np.float32), \
-           np.array(points_vector).astype(np.float32)
+    return per_matrix, points_vector
 
 
 def pseudo_inv(A,b):
-    return ((np.linalg.inv(A.T@A))@A)@b
+    return ((np.linalg.inv(A.T@A))@A.T)@b
 
 ################################################################################
 #
 #                           Main Code
 #
 ################################################################################
+
+
+#------------------------------------------------------------------------------
+#                          Problem 2.a
+#------------------------------------------------------------------------------
 
 address = r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642- Computer Vision'
 
@@ -107,7 +120,6 @@ img = cv2.imread('img.jpg', 0)
 
 #Created copy so not to modify image
 img_mod = img.copy()
-
 
 #Perspective
 img_mod = img.copy()
@@ -123,7 +135,7 @@ M_per = cv2.getPerspectiveTransform(pts1,pts2)
 
 dst_per = cv2.warpPerspective(img, M_per, (size_x, size_y))
 
-matching_1 = click_function(img_mod)
+matching_1 = coords
 matching_1 = np.array(matching_1).astype(np.float32)
 matching_2 = click_function(dst_per)
 matching_2 = np.array(matching_2).astype(np.float32)
@@ -140,8 +152,8 @@ plt.show()
 
 #Affine
 img_mod = img.copy()
-coords_1 = click_function()
-coords_2 = click_function()
+coords_1 = click_function(img_mod)
+coords_2 = click_function(img_mod)
 rows,cols, = img.shape
 
 pts1 = np.array(coords_1).astype(np.float32)
@@ -151,18 +163,91 @@ M_aff = cv2.getAffineTransform(pts1,pts2)
 
 dst_aff = cv2.warpAffine(img,M_aff,(cols,rows))
 
+
+matching_1 = coords_1
+matching_1 = np.array(matching_1).astype(np.float32)
+matching_2 = click_function(dst_per)
+matching_2 = np.array(matching_2).astype(np.float32)
+
+
+A,b = make_aff_matrices(matching_1, matching_2)
+
+aff_matrix = np.linalg.inv(A)@b
+
 plt.suptitle('Affine {}'.format(coords))
 plt.subplot(121),plt.imshow(img),plt.title('Input')
 plt.subplot(122),plt.imshow(dst_aff),plt.title('Output')
 plt.show()
 
-################################################################################
-#
-#                           Problem 2
-#
-################################################################################
+#------------------------------------------------------------------------------
+#                          Problem 2.b
+#------------------------------------------------------------------------------
 
-per_matrix = np.matmul(dst_per, np.linalg.inv(img))
+#Created copy so not to modify image
+img_mod = img.copy()
 
-U, _, _ np.linalg.svd(result)
-min_eig = U[:, -1]
+
+#Perspective
+img_mod = img.copy()
+coords = click_function(img_mod)
+coords2 = click_function(img_mod)
+
+size_x, size_y = img_mod.shape
+
+#For the first two sessions click four points.
+pts1 = np.array(coords).astype(np.float32)
+pts2 = np.array(coords2).astype(np.float32)
+
+M_per = cv2.getPerspectiveTransform(pts1,pts2)
+
+dst_per = cv2.warpPerspective(img, M_per, (size_x, size_y))
+
+#For the second two sessions click more than four points.
+matching_1 = click_function(img_mod)
+matching_1 = np.array(matching_1).astype(np.float32)
+matching_2 = click_function(dst_per)
+matching_2 = np.array(matching_2).astype(np.float32)
+
+A,b = make_per_matrices(matching_1, matching_2)
+
+per_matrix = pseudo_inv(A,b)
+
+plt.suptitle('Perspective: {}'.format(coords))
+plt.subplot(121),plt.imshow(img),plt.title('Input')
+plt.subplot(122),plt.imshow(dst_per),plt.title('Output')
+plt.show()
+
+
+#Affine
+img_mod = img.copy()
+coords_1 = click_function(img_mod)
+coords_2 = click_function(img_mod)
+rows,cols, = img.shape
+
+pts1 = np.array(coords_1).astype(np.float32)
+pts2 = np.array(coords_2).astype(np.float32)
+
+M_aff = cv2.getAffineTransform(pts1,pts2)
+
+dst_aff = cv2.warpAffine(img,M_aff,(cols,rows))
+
+
+matching_1 = click_function(img_mod)
+matching_1 = np.array(matching_1).astype(np.float32)
+matching_2 = click_function(dst_per)
+matching_2 = np.array(matching_2).astype(np.float32)
+
+
+A,b = make_aff_matrices(matching_1, matching_2)
+
+aff_matrix = pseudo_inv(A,b)
+
+plt.suptitle('Affine {}'.format(coords))
+plt.subplot(121),plt.imshow(img),plt.title('Input')
+plt.subplot(122),plt.imshow(dst_aff),plt.title('Output')
+plt.show()
+
+#------------------------------------------------------------------------------
+#                          Problem 2.c
+#------------------------------------------------------------------------------
+
