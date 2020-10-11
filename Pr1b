@@ -16,7 +16,10 @@ import matplotlib.pyplot as plt
 ################################################################################
 
 def click_function(the_image):
-    #Click: UL UR LL LR
+    #This function selectes a set of points after clicking them.
+    #To work properly, you must select points in the following order:
+    #Upper left, upper right, lower left, and lower right.
+
     coords = []
 
     # function to display the coordinates of 
@@ -53,29 +56,9 @@ def click_function(the_image):
 
     return coords
 
-def make_aff_matrices(pts, pts2):
-    aff_matrix = []
-    for x,y in pts:
-        r1 = [x,y,0,0,1,0]
-        r2 = [0,0,x,y,0,1]
-        aff_matrix.append(r1)
-        aff_matrix.append(r2)
-
-    aff_matrix = np.array(aff_matrix).astype(np.float32)
-
-    points_vector = []
-    for x,y in pts2:
-        points_vector.append(x)
-        points_vector.append(y)
-
-    points_vector = np.array(points_vector).astype(np.float32)
-    points_vector = points_vector.reshape((len(points_vector),1))
-    
-        
-    return aff_matrix, points_vector
-
 
 def make_per_matrices(pts, pts2):
+    #Get the matrix that will be inverted to calculate perspective matrix.
     per_matrix = []
     for x,y,u,v in np.hstack([pts, pts2]):
         r1 = [x,y,1,0,0,0,-x*u, -y*u]
@@ -97,8 +80,35 @@ def make_per_matrices(pts, pts2):
     return per_matrix, points_vector
 
 
+def make_aff_matrices(pts, pts2):
+    #Get the matrix that will be inverted to calculate affine matrix.
+    aff_matrix = []
+    for x,y in pts:
+        r1 = [x,y,0,0,1,0]
+        r2 = [0,0,x,y,0,1]
+        aff_matrix.append(r1)
+        aff_matrix.append(r2)
+
+    aff_matrix = np.array(aff_matrix).astype(np.float32)
+
+    points_vector = []
+    for x,y in pts2:
+        points_vector.append(x)
+        points_vector.append(y)
+
+    points_vector = np.array(points_vector).astype(np.float32)
+    points_vector = points_vector.reshape((len(points_vector),1))
+    
+    return aff_matrix, points_vector
+
 def pseudo_inv(A,b):
     return ((np.linalg.inv(A.T@A))@A.T)@b
+
+def reshape_per_matrix(per_matrix):
+    x = list((per_matrix.reshape(-1,)).copy())
+    x.append(1)
+    x = np.array(x).reshape((3,3))
+    return x
 
 ################################################################################
 #
@@ -111,8 +121,8 @@ def pseudo_inv(A,b):
 #                          Problem 2.a
 #------------------------------------------------------------------------------
 
+#Change the directory
 address = r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642- Computer Vision'
-
 os.chdir(address)
 
 #Load image
@@ -135,8 +145,7 @@ M_per = cv2.getPerspectiveTransform(pts1,pts2)
 
 dst_per = cv2.warpPerspective(img, M_per, (size_x, size_y))
 
-matching_1 = coords
-matching_1 = np.array(matching_1).astype(np.float32)
+matching_1 = pts1
 matching_2 = click_function(dst_per)
 matching_2 = np.array(matching_2).astype(np.float32)
 
@@ -144,7 +153,7 @@ A,b = make_per_matrices(matching_1, matching_2)
 
 per_matrix = np.linalg.inv(A)@b
 
-plt.suptitle('Perspective: {}'.format(coords))
+plt.suptitle('Perspective'.format(coords))
 plt.subplot(121),plt.imshow(img),plt.title('Input')
 plt.subplot(122),plt.imshow(dst_per),plt.title('Output')
 plt.show()
@@ -172,7 +181,7 @@ A,b = make_aff_matrices(matching_1, matching_2)
 
 aff_matrix = np.linalg.inv(A)@b
 
-plt.suptitle('Affine {}'.format(coords))
+plt.suptitle('Affine')
 plt.subplot(121),plt.imshow(img),plt.title('Input')
 plt.subplot(122),plt.imshow(dst_aff),plt.title('Output')
 plt.show()
@@ -249,16 +258,16 @@ plt.show()
 #                          Problem 2.c
 #------------------------------------------------------------------------------
 
-def reshape_per_matrix(per_matrix):
-    x = list((per_matrix.reshape(-1,)).copy())
-    x.append(1)
-    x = np.array(x).reshape((3,3))
-    return x
+per_matrix_proper = reshape_per_matrix(per_matrix)
 
+M_aff_proper = M_aff/M_aff[-1][-1]
+M_aff_calc_proper = aff_matrix/aff_matrix[-1][-1]
 
-per_error = np.sum(np.abs(M_per - reshape_per_matrix(per_matrix)))
-aff_error = np.sum(np.abs(M_aff - aff_matrix.reshape((2,3))))
+per_error = np.sum(np.abs(M_per - per_matrix_proper))
+aff_error_proper = np.sum(abs(M_aff_proper - M_aff_calc_proper.reshape((2,3))))
 
 #------------------------------------------------------------------------------
 #                          Problem 2.d
 #------------------------------------------------------------------------------
+
+# This is included in the PDF.
