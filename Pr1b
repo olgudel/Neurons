@@ -121,3 +121,33 @@ plt.suptitle('Perspective: {}'.format(coords))
 plt.subplot(121),plt.imshow(img),plt.title('Input')
 plt.subplot(122),plt.imshow(dst_per),plt.title('Output')
 plt.show()
+
+
+#Affine
+img_mod = img.copy()
+coords_1 = click_function()
+coords_2 = click_function()
+rows,cols, = img.shape
+
+pts1 = np.array(coords_1).astype(np.float32)
+pts2 = np.array(coords_2).astype(np.float32)
+
+M_aff = cv2.getAffineTransform(pts1,pts2)
+
+dst_aff = cv2.warpAffine(img,M_aff,(cols,rows))
+
+plt.suptitle('Affine {}'.format(coords))
+plt.subplot(121),plt.imshow(img),plt.title('Input')
+plt.subplot(122),plt.imshow(dst_aff),plt.title('Output')
+plt.show()
+
+################################################################################
+#
+#                           Problem 2
+#
+################################################################################
+
+per_matrix = np.matmul(dst_per, np.linalg.inv(img))
+
+U, _, _ np.linalg.svd(result)
+min_eig = U[:, -1]
