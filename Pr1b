@@ -160,6 +160,7 @@ pts1 = np.array(coords_1).astype(np.float32)
 pts2 = np.array(coords_2).astype(np.float32)
 
 M_aff = cv2.getAffineTransform(pts1,pts2)
+M_aff /= M_aff[-1][-1]
 
 dst_aff = cv2.warpAffine(img,M_aff,(cols,rows))
 
@@ -173,6 +174,7 @@ matching_2 = np.array(matching_2).astype(np.float32)
 A,b = make_aff_matrices(matching_1, matching_2)
 
 aff_matrix = np.linalg.inv(A)@b
+aff_matrix /= aff_matrix[-1][-1]
 
 plt.suptitle('Affine {}'.format(coords))
 plt.subplot(121),plt.imshow(img),plt.title('Input')
@@ -199,6 +201,7 @@ pts1 = np.array(coords).astype(np.float32)
 pts2 = np.array(coords2).astype(np.float32)
 
 M_per = cv2.getPerspectiveTransform(pts1,pts2)
+M_per /= M_per[-1][-1]
 
 dst_per = cv2.warpPerspective(img, M_per, (size_x, size_y))
 
@@ -211,6 +214,7 @@ matching_2 = np.array(matching_2).astype(np.float32)
 A,b = make_per_matrices(matching_1, matching_2)
 
 per_matrix = pseudo_inv(A,b)
+per_matrix /= per_matrix[-1][-1]
 
 plt.suptitle('Perspective: {}'.format(coords))
 plt.subplot(121),plt.imshow(img),plt.title('Input')
@@ -241,6 +245,7 @@ matching_2 = np.array(matching_2).astype(np.float32)
 A,b = make_aff_matrices(matching_1, matching_2)
 
 aff_matrix = pseudo_inv(A,b)
+aff_matrix = aff_matrix.reshape
 
 plt.suptitle('Affine {}'.format(coords))
 plt.subplot(121),plt.imshow(img),plt.title('Input')
@@ -251,3 +256,5 @@ plt.show()
 #                          Problem 2.c
 #------------------------------------------------------------------------------
 
+per_error = np.sum(np.abs(M_per - per_matrix))
+aff_error = np.sum(np.abs(M_aff - aff_matrix))
