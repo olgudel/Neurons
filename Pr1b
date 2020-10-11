@@ -1,0 +1,109 @@
+import cv2
+import numpy as np
+import os
+import matplotlib.pyplot as plt
+
+address = r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642- Computer Vision'
+
+os.chdir(address)
+
+img = cv2.imread('img.jpg', 0)
+#img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+img_mod = img.copy()
+coords = []
+
+
+def click_function():
+    #Click: UL UR LL LR
+    coords = []
+
+    # function to display the coordinates of
+    # of the points clicked on the image  
+    def click_event(event, x, y, flags, params):
+     
+        # checking for left mouse clicks
+        if event == cv2.EVENT_LBUTTONDOWN:
+     
+            # displaying the coordinates
+            # on the Shell
+            coords.append([x,y])
+     
+            # displaying the coordinates
+            # on the image window
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            cv2.putText(img_mod, str(x) + ',' +
+                        str(y), (x,y), font,
+                        1, (255, 0, 0), 2)
+            cv2.imshow('image', img_mod)
+     
+    # displaying the image
+    cv2.imshow('image', img_mod)
+     
+    # setting mouse hadler for the image
+    # and calling the click_event() function
+    cv2.setMouseCallback('image', click_event)
+     
+    # wait for a key to be pressed to exit
+    cv2.waitKey(0)
+     
+    # close the window
+    cv2.destroyAllWindows()
+
+    return coords
+   
+
+#Perspective
+img_mod = img.copy()
+coords = click_function()
+
+coords2 = click_function()
+pts2 = np.array(coords2).astype(np.float32)
+
+
+
+size_x, size_y = img_mod.shape
+
+pts1 = np.array(coords).astype(np.float32)
+##pts2 = np.float32([[0,0],[size_x,0],[0,size_y],[size_x, size_y]])
+
+M_per = cv2.getPerspectiveTransform(pts1,pts2)
+
+dst_per = cv2.warpPerspective(img, M_per, (size_x, size_y))
+
+plt.suptitle('Perspective: {}'.format(coords))
+plt.subplot(121),plt.imshow(img),plt.title('Input')
+plt.subplot(122),plt.imshow(dst_per),plt.title('Output')
+plt.show()
+
+
+
+
+#Affine
+img_mod = img.copy()
+coords_1 = click_function()
+coords_2 = click_function()
+rows,cols, = img.shape
+
+pts1 = np.array(coords_1).astype(np.float32)
+pts2 = np.array(coords_2).astype(np.float32)
+
+M_aff = cv2.getAffineTransform(pts1,pts2)
+
+dst_aff = cv2.warpAffine(img,M_aff,(cols,rows))
+
+plt.suptitle('Affine {}'.format(coords))
+plt.subplot(121),plt.imshow(img),plt.title('Input')
+plt.subplot(122),plt.imshow(dst_aff),plt.title('Output')
+plt.show()
+
+################################################################################
+#
+#                           Problem 2
+#
+################################################################################
+
+per_matrix = np.matmul(dst_per, np.linalg.inv(img))
+
+U, _, _ np.linalg.svd(result)
+min_eig = U[:, -1]
