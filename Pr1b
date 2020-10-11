@@ -164,8 +164,7 @@ M_aff = cv2.getAffineTransform(pts1,pts2)
 dst_aff = cv2.warpAffine(img,M_aff,(cols,rows))
 
 
-matching_1 = coords_1
-matching_1 = np.array(matching_1).astype(np.float32)
+matching_1 = pts1
 matching_2 = click_function(dst_aff)
 matching_2 = np.array(matching_2).astype(np.float32)
 
@@ -234,7 +233,7 @@ dst_aff = cv2.warpAffine(img,M_aff2,(cols,rows))
 
 matching_1 = click_function(img_mod)
 matching_1 = np.array(matching_1).astype(np.float32)
-matching_2 = click_function(dst_per)
+matching_2 = click_function(dst_aff)
 matching_2 = np.array(matching_2).astype(np.float32)
 
 A,b = make_aff_matrices(matching_1, matching_2)
