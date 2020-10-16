@@ -3216,6 +3216,51 @@ variables_nfb = [mean_y, cv_y, fano_y, autocorr_y]
 names_fb = ['mean_fb', 'cv_fb', 'fano_fb', 'autocorr_fb']
 names_nfb = ['mean', 'cv', 'fano', 'autocorr']
 
+
+#
+plt.figure()
+plt.plot(values, variables_fb[0], label = 'feedback', color = 'blue',
+         linestyle = '--')
+plt.plot(values, variables_nfb[0], label = 'non-feedback', color = 'red')
+plt.title('Mean inter-firing time in seconds vs {}'.format(p_name))
+plt.ylabel('Mean inter-firing time (s)')
+plt.xlabel(p_name)
+plt.legend()
+#plt.show()
+
+plt.figure()
+plt.plot(values, variables_fb[1], label = 'feedback', color = 'blue',
+         linestyle = '--')
+plt.plot(values, variables_nfb[1], label = 'non-feedback', color = 'red')
+plt.title('Coefficient of Variation vs {}'.format(p_name))
+plt.ylabel('Coefficient of Variation)')
+plt.xlabel(p_name)
+plt.legend()
+#plt.show()
+
+plt.figure()
+plt.plot(values, variables_fb[2], label = 'feedback', color = 'blue',
+         linestyle = '--')
+plt.plot(values, variables_nfb[2], label = 'non-feedback', color = 'red')
+plt.title('Fano Factor vs {}'.format(p_name))
+plt.ylabel('Fano Factor')
+plt.xlabel(p_name)
+plt.legend()
+#plt.show()
+
+plt.figure()
+plt.plot(values, variables_fb[3], label = 'feedback', color = 'blue',
+         linestyle = '--')
+plt.plot(values, variables_nfb[3], label = 'non-feedback', color = 'red')
+plt.title('Autocorrelation vs {}'.format(p_name))
+plt.ylabel('Autocorrelation')
+plt.xlabel(p_name)
+plt.legend()
+
+#SHOW ALL THE PLOTS
+plt.show()
+#
+
 fig, ax = plt.subplots(1,4)
 fig.suptitle('Varying \"{}\" from {} to {} in {} increments'.format(
               p_name, np.around(values[0], 2), np.around(values[-1],2),
@@ -3226,12 +3271,17 @@ for i in range(4):
     if i != 3:
         ax[i].plot([values[0]], [1])
         ax[i].plot([values[1]], [0])
+        if i == 0:
+            ax[i].set_ylabel('Seconds')
+    
+            
     if i == 3:
         ax[i].plot([values[0]], [1])
         ax[i].plot([values[1]], [-1])
 
     ax[i].plot(values, variables_fb[i], label = names_fb[i], color = 'blue')
     ax[i].plot(values, variables_nfb[i], label = names_nfb[i], color = 'red')
+    ax[i].set_xlabel('{}'.format(p_name))
 
     ax[i].legend()
 plt.show()
