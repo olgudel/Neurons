@@ -3261,27 +3261,27 @@ plt.legend()
 plt.show()
 #
 
-fig, ax = plt.subplots(1,4)
-fig.suptitle('Varying \"{}\" from {} to {} in {} increments'.format(
-              p_name, np.around(values[0], 2), np.around(values[-1],2),
-              len(values)))
-
-for i in range(4):
-    ax[i].set_title(names_nfb[i])
-    if i != 3:
-        ax[i].plot([values[0]], [1])
-        ax[i].plot([values[1]], [0])
-        if i == 0:
-            ax[i].set_ylabel('Seconds')
-    
-            
-    if i == 3:
-        ax[i].plot([values[0]], [1])
-        ax[i].plot([values[1]], [-1])
-
-    ax[i].plot(values, variables_fb[i], label = names_fb[i], color = 'blue')
-    ax[i].plot(values, variables_nfb[i], label = names_nfb[i], color = 'red')
-    ax[i].set_xlabel('{}'.format(p_name))
-
-    ax[i].legend()
-plt.show()
+##fig, ax = plt.subplots(1,4)
+##fig.suptitle('Varying \"{}\" from {} to {} in {} increments'.format(
+##              p_name, np.around(values[0], 2), np.around(values[-1],2),
+##              len(values)))
+##
+##for i in range(4):
+##    ax[i].set_title(names_nfb[i])
+##    if i != 3:
+##        ax[i].plot([values[0]], [1])
+##        ax[i].plot([values[1]], [0])
+##        if i == 0:
+##            ax[i].set_ylabel('Seconds')
+##    
+##            
+##    if i == 3:
+##        ax[i].plot([values[0]], [1])
+##        ax[i].plot([values[1]], [-1])
+##
+##    ax[i].plot(values, variables_fb[i], label = names_fb[i], color = 'blue')
+##    ax[i].plot(values, variables_nfb[i], label = names_nfb[i], color = 'red')
+##    ax[i].set_xlabel('{}'.format(p_name))
+##
+##    ax[i].legend()
+##plt.show()
