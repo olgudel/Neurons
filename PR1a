@@ -17,7 +17,9 @@ def convolve(img,H):
     image = img.copy()
 
     channels = []
+    ch_names = ['R', 'G', 'B']
     for ch in range(image.shape[2]):
+        print('Convolving chanel {}'.format(ch_names[ch]))
         I = image[:, :, ch]
         K_size = H.shape[0]
         frame_addition = int((K_size-1) // 2)
@@ -28,13 +30,10 @@ def convolve(img,H):
               frame_addition : frame_addition + I.shape[1]] = I
         final = frame.copy()
 
-        k = 0
         for i in range(I.shape[0]):
             for j in range(I.shape[1]):
                 final[i+frame_addition,j+frame_addition] = \
                                 np.sum(H * frame[i:i+K_size, j:j+K_size])
-                k += 1
-                print(k / I.size*3)
         channels.append(final)
     return np.stack(channels, axis = 2)
 
@@ -52,8 +51,28 @@ def gaussian(sigma, F_size):
         for j in range(len(numbers)):
             gauss_kernel[i,j] = gauss(numbers[i],numbers[j],sigma)
     return gauss_kernel
-        
-        
-def reduce(img, H):
+
+
+def reduce(img, sigma, F_size):
+    convolved_img = convolve(img, gaussian(sigma, F_size))
+    reduced_img = convolved_img[::2, ::2]
+    return reduced_img
+
+reduced_img = reduce(I, sigma = 4, F_size = 15)
+
+plt.imshow(reduced_img)
+plt.show()
+
+
+def expand(img):
+    expanded_img = np.zeros((2*img.shape[0],2*img.shape[1], 3)).astype(np.uint8)
+    expanded_img[::2, ::2] = img
+    return expanded_img
+
+expanded_img = expand(I)
+plt.imshow(expanded_img)
+plt.show()
+
+    
     
 
