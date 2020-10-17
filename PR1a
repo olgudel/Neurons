@@ -2,6 +2,8 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
+from scipy.ndimage import gaussian_filter
+
 I = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\ud.jpg', 1)
 I = cv2.cvtColor(I, cv2.COLOR_BGR2RGB)
 plt.imshow(I)
@@ -41,5 +43,17 @@ result = convolve(I,H)
 plt.imshow(result)
 plt.show()
 
+def gaussian(sigma, F_size):
+    numbers = range(-int((F_size - 1)//2), int((F_size - 1)//2 + 1))
+    gauss = lambda x,y,sigma : 1/(2 * np.pi * sigma**2) * np.exp(-(x**2 + y**2)/(2 * sigma**2))
 
+    gauss_kernel = np.zeros((F_size, F_size))
+    for i in range(len(numbers)):
+        for j in range(len(numbers)):
+            gauss_kernel[i,j] = gauss(numbers[i],numbers[j],sigma)
+    return gauss_kernel
+        
+        
+def reduce(img, H):
+    
 
