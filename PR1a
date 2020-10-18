@@ -95,6 +95,36 @@ expanded_img = expand(I)
 plt.imshow(expanded_img)
 plt.show()
 
+def GaussianPyramid(I,n):
+
+    if n == 0:
+        print('n=0')
+        Gauss_list.append(I)
+        return I
+    print('Reducing {}'.format(n))
+
+    
+    reduced_image = reduce(I, sigma = 1, F_size = 5)
+    Gauss_list.append(reduced_image)
+    return GaussianPyramid(reduced_image, n-1)
+
+Gauss_list = []
+GP = GaussianPyramid(I,2)
+
+def LaplacianPyramid(I,n)
+
+    Gauss_list = []
+    GP = GaussianPyramid(I,n)
+    Gauss_list.reverse()
+
+    Laplace_list = []
+
+    for i in range(n):
+        
+    
+
+
+
     
 
 
