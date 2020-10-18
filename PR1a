@@ -10,13 +10,13 @@ I = cv2.cvtColor(I, cv2.COLOR_BGR2RGB)
 
 I = cv2.resize(I, (512,512))
 
-
-plt.imshow(I)
-plt.show()
-
-
-H = np.array([[1, 1, 1], [1,1,1], [1,1,1]]) * (1/9)
-
+##
+##plt.imshow(I)
+##plt.show()
+##
+##
+##H = np.array([[1, 1, 1], [1,1,1], [1,1,1]]) * (1/9)
+##
 
 def convolve(img,H):
     image = img.copy()
@@ -42,8 +42,8 @@ def convolve(img,H):
         channels.append(final)
 
         return_image = np.stack(channels, axis = 2)
-        #return_image = return_image[frame_addition:return_image.shape[0] + frame_addition,
-        #                            frame_addition:return_image.shape[1] + frame_addition]
+        return_image = return_image[frame_addition:-frame_addition, frame_addition:-frame_addition]
+
     return return_image 
 
 result = convolve(I,H)
@@ -65,12 +65,12 @@ def gaussian(sigma, F_size):
 def reduce(img, sigma, F_size):
     convolved_img = convolve(img, gaussian(sigma, F_size))
     reduced_img = convolved_img[::2, ::2]
-    return img_shape_check(reduced_img)
+    return reduced_img
 
-reduced_img = reduce(I, sigma = 1, F_size = 5)
-
-plt.imshow(reduced_img)
-plt.show()
+##reduced_img = reduce(I, sigma = 1, F_size = 5)
+##
+##plt.imshow(reduced_img)
+##plt.show()
 
 
 def expand(img):
@@ -88,21 +88,13 @@ def expand(img):
         for i in np.arange(1, I.shape[0] - 1, 2):
             I[i, :] = np.mean(np.vstack([I[i-1, :],
                                              I[i+1, :]]), axis = 0) 
-
-            
-        
-##        for i in range(int((I.shape[1])//2) - 2):
-##            I[:, 2*i+1] = np.mean(np.hstack([I[:, 2*i], I[:, 2*i + 2]]), axis = 1) 
-##        for i in range(int((I.shape[0])//2) - 2):
-##            I[2*i+1, :] = np.mean(np.vstack([I[2*i, :], I[2*i + 2, :]]), axis = 0) 
-
         channels.append(I)     
 
     return np.stack(channels, axis = 2)
 
-expanded_img = expand(I)
-plt.imshow(expanded_img)
-plt.show()
+##expanded_img = expand(I)
+##plt.imshow(expanded_img)
+##plt.show()
 
 def GaussianPyramid(I,n):
 
@@ -116,7 +108,7 @@ def GaussianPyramid(I,n):
 
     return GP
 
-GP = GaussianPyramid(I,2)
+#GP = GaussianPyramid(I,2)
 
 def LaplacianPyramid(I,n):
 
@@ -130,9 +122,33 @@ def LaplacianPyramid(I,n):
     for i in np.arange(n-1, -1, -1):
         Laplace_dict[i] = Gauss_dict[i] - expand(Gauss_dict[i+1])
 
-    return Laplace_dict[n]
+    return Laplace_dict, Gauss_dict
 
-LP = LaplacianPyramid(I, 2)
+##LP, GP = LaplacianPyramid(I, 2)
+##plt.imshow(LP[0])
+##plt.show()
+
+def Reconstruct(LP, GP, n):
+
+    final_image = GP[n]
+
+    for i in np.arange(n-1, -1, -1):
+        print('Level {}'.format(i))
+        final_image = expand(final_image)
+        final_image = convolve(final_image, H) + LP[i]
+
+    return final_image
+
+n = 2
+Reconstruct(LP, GP, n)
+        
+
+    
+
+    
+
+    
+    
         
     
 
