@@ -2,10 +2,22 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-from scipy.ndimage import gaussian_filter
+def img_shape_check(I):
+    #Make sure the image has even dimensions.
+    if I.shape[0] % 2 != 0:
+        I = np.vtack([I, I[-1, :].reshape((1, I.shape[1],3))])
+    if I.shape[1] % 2 != 0:
+        I = np.hstack([I, I[:, -1].reshape((I.shape[0], 1, 3))])
+    return I.astype(np.uint8)
+
+
 
 I = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\ud.jpg', 1)
 I = cv2.cvtColor(I, cv2.COLOR_BGR2RGB)
+
+I = img_shape_check(I)
+
+
 plt.imshow(I)
 plt.show()
 
@@ -55,10 +67,10 @@ def gaussian(sigma, F_size):
 
 def reduce(img, sigma, F_size):
     convolved_img = convolve(img, gaussian(sigma, F_size))
-    reduced_img = convolved_img[::2, ::2]
-    return reduced_img
+    reduced_img = convolved_img[1::2, 1::2]
+    return img_shape_check(reduced_img)
 
-reduced_img = reduce(I, sigma = 4, F_size = 15)
+reduced_img = reduce(I, sigma = 1, F_size = 5)
 
 plt.imshow(reduced_img)
 plt.show()
@@ -97,29 +109,33 @@ plt.show()
 
 def GaussianPyramid(I,n):
 
-    if n == 0:
-        print('n=0')
-        Gauss_list.append(I)
-        return I
-    print('Reducing {}'.format(n))
+    reduced_image = I.copy()
+    GP = [reduced_image]
 
-    
-    reduced_image = reduce(I, sigma = 1, F_size = 5)
-    Gauss_list.append(reduced_image)
-    return GaussianPyramid(reduced_image, n-1)
+    for i in range(1,n+1):
+        print('Reducing {}'.format(i))
+        reduced_image = reduce(reduced_image, sigma = 1, F_size = 5)
+        GP.append(reduced_image)
 
-Gauss_list = []
+    return GP
+
 GP = GaussianPyramid(I,2)
 
-def LaplacianPyramid(I,n)
+def LaplacianPyramid(I,n):
 
-    Gauss_list = []
     GP = GaussianPyramid(I,n)
-    Gauss_list.reverse()
 
-    Laplace_list = []
+    Gauss_dict = {i:GP[i] for i in range(len(GP))}
 
-    for i in range(n):
+    Laplace_dict = {}
+    Laplace_dict[n] = Gauss_dict[n]
+
+    for i in np.arange(n-1, -1, -1):
+        Laplace_dict[i] = Gauss_dict[i] - expand(Gauss_dict[i+1])
+
+    return Laplace_dict[n]
+
+LP = LaplacianPyramid(I, 2)
         
     
 
