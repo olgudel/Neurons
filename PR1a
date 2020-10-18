@@ -60,7 +60,7 @@ I = cv2.resize(I, (512,512))
 ##H = np.array([[1, 1, 1], [1,1,1], [1,1,1]]) * (1/9)
 ##
 
-def convolve(img,H):
+def convolve(img, H):
     image = img.copy()
 
     channels = []
@@ -145,7 +145,7 @@ def GaussianPyramid(I,n):
 
     for i in range(1,n+1):
         print('Reducing {}'.format(i))
-        reduced_image = reduce(reduced_image, sigma = 2, F_size = 5)
+        reduced_image = reduce(reduced_image, sigma = 1, F_size = 15)
         GP.append(reduced_image)
 
     return GP
@@ -164,30 +164,31 @@ def LaplacianPyramid(I,n):
     for i in np.arange(n-1, -1, -1):
         Laplace_dict[i] = Gauss_dict[i] - expand(Gauss_dict[i+1])
 
-    return Laplace_dict, Gauss_dict
+    return Laplace_dict
 
-##LP, GP = LaplacianPyramid(I, 2)
-##plt.imshow(LP[0])
-##plt.show()
+LP = LaplacianPyramid(I, 2)
+plt.imshow(LP[0])
+plt.show()
 
-def Reconstruct(LP, GP, n):
+def Reconstruct(LP,n):
 
-    final_image = GP[n]
+    final_image = LP[n]
 
     for i in np.arange(n-1, -1, -1):
         print('Level {}'.format(i))
         final_image = expand(final_image) + LP[i]
 ##        final_image = convolve(final_image, H) + LP[i]
+        
 
     return final_image
 
-##n = 2
-##reconstructed = Reconstruct(LP, GP, n)
-##
-##plt.imshow(reconstructed)
-##plt.show()
-##
-##error = np.sum(np.abs(reconstructed - I))
+n = 2
+reconstructed = Reconstruct(LP, n)
+
+plt.imshow(reconstructed)
+plt.show()
+
+error = np.sum(np.abs(reconstructed - I))
 
 I1 = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\apple.jpg', 1)
 I1 = cv2.cvtColor(I1, cv2.COLOR_BGR2RGB)
@@ -205,22 +206,30 @@ n=2
 coords = click_function(I1.copy())
 
 binary_mask = np.zeros(I1.shape)
-binary_mask[:, :coords[0][0]] = 1
+binary_mask[:, :coords[0][0]] = 255
+binary_mask = binary_mask.astype(np.uint8)
 
-op_mask = np.abs(binary_mask - 1)
-
-plt.imshow(binary_mask)
+mask = convolve(binary_mask, gaussian(10, 91))
+plt.imshow(mask)
 plt.show()
 
-plt.imshow(op_mask)
-plt.show()
 
-L1, G1 = LaplacianPyramid(I1, n)
-L2, G2 = LaplacianPyramid(I2, n)
+##plt.imshow(binary_mask)
+##plt.show()
 
-L3, G3 = LaplacianPyramid(binary_mask, n)
+L1 = LaplacianPyramid(I1, n)
+L2= LaplacianPyramid(I2, n)
 
-recon1 = Reconstruct(L5, G5, n)
+G3 = GaussianPyramid(mask, n)
+
+for k in range(len(G3)):
+    g = G3[k].astype(float)/255
+    G3[k] = g
+
+
+L3 = {i : (L1[i]*G3[i] + (1 - G3[i])*L2[i]).astype(np.uint8) for i in range(n+1)}
+
+recon1 = Reconstruct(L3, n)
 
 plt.imshow(recon1)
 plt.show()
@@ -228,18 +237,38 @@ plt.show()
 
 
 
-
-    
-
-    
-
-    
-    
-        
-    
+########################
 
 
 
-    
 
+# Now add left and right halves of images in each level
+LA = [L1[i] for i in range(n+1)]
+LB = [L2[i] for i in range(n+1)]
 
+LS = []
+for la,lb in zip(LA,LB):
+    rows,cols,dpt = la.shape
+    ls = np.hstack((la[:,0:int(cols/2)], lb[:,int(cols/2):]))
+    LS.append(ls)
+
+#AAA
+# now reconstruct
+ls_ = LS[0]
+for i in range(1,6):
+    ls_ = cv2.pyrUp(ls_)
+    ls_ = cv2.add(ls_, LS[i])
+plt.imshow(ls_)
+plt.show()
+#BBB
+
+plt.imshow(Reconstruct(LS, 2))
+plt.show()
+
+We add the halves of the images.
+# now reconstruct
+ls_ = LS[0]
+for i in range(1,6):
+    ls_ = cv2.pyrUp(ls_)
+    ls_ = cv2.add(ls_, LS[i])
+cv2.imshow('RESULT',ls_)
