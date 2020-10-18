@@ -4,6 +4,48 @@ import matplotlib.pyplot as plt
 
 
 
+def click_function(the_image):
+    #This function selectes a set of points after clicking them.
+    #To work properly, you must select points in the following order:
+    #Upper left, upper right, lower left, and lower right.
+
+    coords = []
+
+    # function to display the coordinates of 
+    # of the points clicked on the image  
+    def click_event(event, x, y, flags, params): 
+      
+        # checking for left mouse clicks 
+        if event == cv2.EVENT_LBUTTONDOWN: 
+      
+            # displaying the coordinates 
+            # on the Shell 
+            coords.append([x,y])
+      
+            # displaying the coordinates 
+            # on the image window 
+            font = cv2.FONT_HERSHEY_SIMPLEX 
+            cv2.putText(the_image, str(x) + ',' +
+                        str(y), (x,y), font, 
+                        1, (255, 0, 0), 2) 
+            cv2.imshow('image', the_image) 
+      
+    # displaying the image 
+    cv2.imshow('image', the_image) 
+      
+    # setting mouse hadler for the image 
+    # and calling the click_event() function 
+    cv2.setMouseCallback('image', click_event) 
+      
+    # wait for a key to be pressed to exit 
+    cv2.waitKey(0) 
+      
+    # close the window 
+    cv2.destroyAllWindows()
+
+    return coords
+
+
 
 I = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\ud.jpg', 1)
 I = cv2.cvtColor(I, cv2.COLOR_BGR2RGB)
@@ -103,7 +145,7 @@ def GaussianPyramid(I,n):
 
     for i in range(1,n+1):
         print('Reducing {}'.format(i))
-        reduced_image = reduce(reduced_image, sigma = 1, F_size = 5)
+        reduced_image = reduce(reduced_image, sigma = 2, F_size = 5)
         GP.append(reduced_image)
 
     return GP
@@ -156,10 +198,34 @@ I2 = cv2.cvtColor(I2, cv2.COLOR_BGR2RGB)
 I1 = cv2.resize(I1, (512,512))
 I2 = cv2.resize(I2, (512,512))
 
-n = 2
+n=2
 
-L1 = LaplacianPyramid(I1, n)
-L2 = LaplacianPyramid(I2, n)
+
+#Choose one point on the image
+coords = click_function(I1.copy())
+
+binary_mask = np.zeros(I1.shape)
+binary_mask[:, :coords[0][0]] = 1
+
+op_mask = np.abs(binary_mask - 1)
+
+plt.imshow(binary_mask)
+plt.show()
+
+plt.imshow(op_mask)
+plt.show()
+
+L1, G1 = LaplacianPyramid(I1, n)
+L2, G2 = LaplacianPyramid(I2, n)
+
+L3, G3 = LaplacianPyramid(binary_mask, n)
+
+recon1 = Reconstruct(L5, G5, n)
+
+plt.imshow(recon1)
+plt.show()
+
+
 
 
 
