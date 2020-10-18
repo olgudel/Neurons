@@ -2,20 +2,13 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 
-def img_shape_check(I):
-    #Make sure the image has even dimensions.
-    if I.shape[0] % 2 != 0:
-        I = np.vtack([I, I[-1, :].reshape((1, I.shape[1],3))])
-    if I.shape[1] % 2 != 0:
-        I = np.hstack([I, I[:, -1].reshape((I.shape[0], 1, 3))])
-    return I.astype(np.uint8)
 
 
 
 I = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\ud.jpg', 1)
 I = cv2.cvtColor(I, cv2.COLOR_BGR2RGB)
 
-I = img_shape_check(I)
+I = cv2.resize(I, (512,512))
 
 
 plt.imshow(I)
@@ -47,7 +40,11 @@ def convolve(img,H):
                 final[i+frame_addition,j+frame_addition] = \
                                 np.sum(H * frame[i:i+K_size, j:j+K_size])
         channels.append(final)
-    return np.stack(channels, axis = 2)
+
+        return_image = np.stack(channels, axis = 2)
+        #return_image = return_image[frame_addition:return_image.shape[0] + frame_addition,
+        #                            frame_addition:return_image.shape[1] + frame_addition]
+    return return_image 
 
 result = convolve(I,H)
 
@@ -67,7 +64,7 @@ def gaussian(sigma, F_size):
 
 def reduce(img, sigma, F_size):
     convolved_img = convolve(img, gaussian(sigma, F_size))
-    reduced_img = convolved_img[1::2, 1::2]
+    reduced_img = convolved_img[::2, ::2]
     return img_shape_check(reduced_img)
 
 reduced_img = reduce(I, sigma = 1, F_size = 5)
