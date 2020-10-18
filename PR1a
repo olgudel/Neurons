@@ -134,14 +134,34 @@ def Reconstruct(LP, GP, n):
 
     for i in np.arange(n-1, -1, -1):
         print('Level {}'.format(i))
-        final_image = expand(final_image)
-        final_image = convolve(final_image, H) + LP[i]
+        final_image = expand(final_image) + LP[i]
+##        final_image = convolve(final_image, H) + LP[i]
 
     return final_image
 
+##n = 2
+##reconstructed = Reconstruct(LP, GP, n)
+##
+##plt.imshow(reconstructed)
+##plt.show()
+##
+##error = np.sum(np.abs(reconstructed - I))
+
+I1 = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\apple.jpg', 1)
+I1 = cv2.cvtColor(I1, cv2.COLOR_BGR2RGB)
+
+I2 = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\orange.jpg', 1)
+I2 = cv2.cvtColor(I2, cv2.COLOR_BGR2RGB)
+
+I1 = cv2.resize(I1, (512,512))
+I2 = cv2.resize(I2, (512,512))
+
 n = 2
-Reconstruct(LP, GP, n)
-        
+
+L1 = LaplacianPyramid(I1, n)
+L2 = LaplacianPyramid(I2, n)
+
+
 
     
 
