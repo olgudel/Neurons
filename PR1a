@@ -69,10 +69,7 @@ def expand(img):
     expanded_img[::2, ::2] = img
 
     channels = []
-    ch_names = ['R', 'G', 'B']
-    
     for ch in range(expanded_img.shape[2]):
-        print('Filling channel {}'.format(ch_names[ch]))
         I = expanded_img[:, :, ch]
 
         for i in np.arange(1, I.shape[1] - 1, 2):
