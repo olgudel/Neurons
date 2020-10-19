@@ -1,6 +1,19 @@
+################################################################################
+#
+#                           Import Libraries
+#
+################################################################################
+
+
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+
+################################################################################
+#
+#                           Functions
+#
+################################################################################
 
 
 
@@ -45,7 +58,64 @@ def click_function(the_image):
 
     return coords
 
+def make_per_matrices(pts, pts2):
+    #Get the matrix that will be inverted to calculate perspective matrix.
+    per_matrix = []
+    for x,y,u,v in np.hstack([pts, pts2]):
+        r1 = [x,y,1,0,0,0,-x*u, -y*u]
+        r2 = [0,0,0,x,y,1,-x*v, -y*v]
+        per_matrix.append(r1)
+        per_matrix.append(r2)
 
+    per_matrix = np.array(per_matrix).astype(np.float32)
+
+    points_vector = []
+    for x,y in pts2:
+        points_vector.append(x)
+        points_vector.append(y)
+
+    points_vector = np.array(points_vector).astype(np.float32)
+    points_vector = points_vector.reshape((len(points_vector),1))
+    
+        
+    return per_matrix, points_vector
+
+
+def make_aff_matrices(pts, pts2):
+    #Get the matrix that will be inverted to calculate affine matrix.
+    aff_matrix = []
+    for x,y in pts:
+        r1 = [x,y,0,0,1,0]
+        r2 = [0,0,x,y,0,1]
+        aff_matrix.append(r1)
+        aff_matrix.append(r2)
+
+    aff_matrix = np.array(aff_matrix).astype(np.float32)
+
+    points_vector = []
+    for x,y in pts2:
+        points_vector.append(x)
+        points_vector.append(y)
+
+    points_vector = np.array(points_vector).astype(np.float32)
+    points_vector = points_vector.reshape((len(points_vector),1))
+    
+    return aff_matrix, points_vector
+
+def pseudo_inv(A,b):
+    return ((np.linalg.inv(A.T@A))@A.T)@b
+
+def reshape_per_matrix(per_matrix):
+    x = list((per_matrix.reshape(-1,)).copy())
+    x.append(1)
+    x = np.array(x).reshape((3,3))
+    return x
+
+################################################################################
+#
+#                           Main Code
+#
+################################################################################
 
 I = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\ud.jpg', 1)
 I = cv2.cvtColor(I, cv2.COLOR_BGR2RGB)
@@ -232,12 +302,34 @@ for k in range(len(G3)):
     g = G3[k].astype(float)/255
     G3[k] = g
 
-L3 = {i : (L1[i]*G3[i] + (255 - G3[i])*L2[i]) for i in range(n+1)}
+L3 = {i : (L1[i]*G3[i] + (1 - G3[i])*L2[i]) for i in range(n+1)}
 
 
 recon = Reconstruct(L3, n)
 plt.imshow(recon.astype(np.uint8))
 plt.show()
+
+
+I_left = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\left.jpg', 1)
+I_right = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\right.jpg', 1)
+
+I_left = cv2.cvtColor(I_left, cv2.COLOR_BGR2RGB)
+I_right = cv2.cvtColor(I_right, cv2.COLOR_BGR2RGB)
+
+I_left = cv2.resize(I_left, (512,512))
+I_right = cv2.resize(I_right, (512,512))
+
+cut_location = 200
+
+mosaic = np.zeros((I_left.shape[0], 2 * I_left.shape[1] - cut_location, 3)).astype(np.uint8)
+mosaic_left = mosaic.copy()
+mosaic_left[:I_left.shape[0], :I_left.shape[1]] = I_left
+mosaic_right = mosaic.copy()
+mosaic_right[-I_right.shape[0]:, -I_right.shape[1]:] = I_right
+
+
+
+
 
 
 
