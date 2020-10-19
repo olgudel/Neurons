@@ -132,7 +132,9 @@ def expand(img):
                                              I[i+1, :]]), axis = 0) 
         channels.append(I)     
 
-    return np.stack(channels, axis = 2)
+    return_array = np.stack(channels, axis = 2)
+    
+    return 4*convolve(return_array, gaussian(1, 5))
 
 ##expanded_img = expand(I)
 ##plt.imshow(expanded_img)
@@ -145,7 +147,7 @@ def GaussianPyramid(I,n):
 
     for i in range(1,n+1):
         print('Reducing {}'.format(i))
-        reduced_image = reduce(reduced_image, sigma = 3, F_size = 31)
+        reduced_image = reduce(reduced_image, sigma = 1, F_size = 5)
         GP.append(reduced_image)
 
     return GP
@@ -161,7 +163,7 @@ def LaplacianPyramid(I,n):
     Laplace_dict = {}
     Laplace_dict[n] = Gauss_dict[n]
 
-    for i in np.arange(n-1, -1, -1):
+    for i in np.arange(n):
         Laplace_dict[i] = Gauss_dict[i] - expand(Gauss_dict[i+1])
 
     return Laplace_dict
@@ -209,7 +211,9 @@ binary_mask = np.zeros(I1.shape)
 binary_mask[:, :coords[0][0]] = 255
 binary_mask = binary_mask.astype(np.uint8)
 
-mask = convolve(binary_mask, gaussian(10, 91))
+mask = binary_mask.copy()
+
+
 plt.imshow(mask)
 plt.show()
 
@@ -220,18 +224,19 @@ plt.show()
 L1 = LaplacianPyramid(I1, n)
 L2= LaplacianPyramid(I2, n)
 
+
+
 G3 = GaussianPyramid(mask, n)
 
 for k in range(len(G3)):
     g = G3[k].astype(float)/255
     G3[k] = g
 
-
-L3 = {i : (L1[i]*G3[i] + (1 - G3[i])*L2[i]).astype(np.uint8) for i in range(n+1)}
+L3 = {i : (L1[i]*G3[i] + (255 - G3[i])*L2[i]) for i in range(n+1)}
 
 
 recon = Reconstruct(L3, n)
-plt.imshow(recon)
+plt.imshow(recon.astype(np.uint8))
 plt.show()
 
 
