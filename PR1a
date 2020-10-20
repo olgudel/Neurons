@@ -122,8 +122,8 @@ I = cv2.cvtColor(I, cv2.COLOR_BGR2RGB)
 I = cv2.resize(I, (512,512))
 
 
-plt.imshow(I)
-plt.show()
+##plt.imshow(I)
+##plt.show()
 
 
 H = np.array([[1, 1, 1], [1,1,1], [1,1,1]]) * (1/9)
@@ -188,26 +188,9 @@ def expand(img):
     expanded_img = np.zeros((2*img.shape[0],2*img.shape[1], 3))
     expanded_img[::2, ::2] = img
 
-    channels = []
-    for ch in range(expanded_img.shape[2]):
-        I = expanded_img[:, :, ch]
+    return 4 * convolve(expanded_img, gaussian(1,5))
 
-        for i in np.arange(1, I.shape[1] - 1, 2):
-            I[:, i] = np.mean(np.vstack([I[:, i-1],
-                                             I[:, i+1]]), axis = 0)
-            
-        for i in np.arange(1, I.shape[0] - 1, 2):
-            I[i, :] = np.mean(np.vstack([I[i-1, :],
-                                             I[i+1, :]]), axis = 0) 
-        channels.append(I)     
 
-    return_array = np.stack(channels, axis = 2)
-    
-    return convolve(return_array, gaussian(4, 15))
-
-##expanded_img = expand(I)
-##plt.imshow(expanded_img.astype(np.uint8))
-##plt.show()
 
 def GaussianPyramid(I,n):
 
@@ -216,7 +199,7 @@ def GaussianPyramid(I,n):
 
     for i in range(1,n+1):
         print('Reducing {}'.format(i))
-        reduced_image = reduce(reduced_image, sigma = 4, F_size = 15)
+        reduced_image = reduce(reduced_image, sigma = 1, F_size = 5)
         GP.append(reduced_image)
 
     return GP
@@ -261,16 +244,16 @@ def Reconstruct(LP,n):
 ##
 ##error = np.sum(np.abs(reconstructed - I))
 
-I1 = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\apple.png', 1)
+I1 = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\apple.jpg', 1)
 I1 = cv2.cvtColor(I1, cv2.COLOR_BGR2RGB)
 
-I2 = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\orange.png', 1)
+I2 = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\orange.jpg', 1)
 I2 = cv2.cvtColor(I2, cv2.COLOR_BGR2RGB)
 
 I1 = cv2.resize(I1, (512,512))
 I2 = cv2.resize(I2, (512,512))
 
-n=2
+n=3
 
 
 #Choose one point on the image
@@ -282,8 +265,8 @@ binary_mask[:, :coords[0][0]] = 1
 mask = binary_mask.copy()
 
 
-plt.imshow(mask)
-plt.show()
+##plt.imshow(mask)
+##plt.show()
 
 
 ##plt.imshow(binary_mask)
@@ -303,7 +286,7 @@ recon = Reconstruct(L3, n)
 plt.imshow(recon.astype(np.uint8))
 plt.show()
 
-
+####################################
 I_left = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\left.jpg', 1)
 I_right = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\right.jpg', 1)
 
