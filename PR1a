@@ -4,7 +4,6 @@
 #
 ################################################################################
 
-
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
@@ -122,13 +121,13 @@ I = cv2.cvtColor(I, cv2.COLOR_BGR2RGB)
 
 I = cv2.resize(I, (512,512))
 
-##
-##plt.imshow(I)
-##plt.show()
-##
-##
-##H = np.array([[1, 1, 1], [1,1,1], [1,1,1]]) * (1/9)
-##
+
+plt.imshow(I)
+plt.show()
+
+
+H = np.array([[1, 1, 1], [1,1,1], [1,1,1]]) * (1/9)
+
 
 def convolve(img, H):
     image = img.copy()
@@ -141,7 +140,7 @@ def convolve(img, H):
         K_size = H.shape[0]
         frame_addition = int((K_size-1) // 2)
         frame = np.zeros([I.shape[0] + K_size - 1,
-                          I.shape[1] + K_size - 1]).astype(np.uint8)
+                          I.shape[1] + K_size - 1])
         
         frame[frame_addition: frame_addition + I.shape[0],
               frame_addition : frame_addition + I.shape[1]] = I
@@ -156,11 +155,11 @@ def convolve(img, H):
         return_image = np.stack(channels, axis = 2)
         return_image = return_image[frame_addition:-frame_addition, frame_addition:-frame_addition]
 
-    return return_image 
+    return return_image
 
 ##result = convolve(I,H)
 ##
-##plt.imshow(result)
+##plt.imshow(result.astype(np.uint8))
 ##plt.show()
 
 def gaussian(sigma, F_size):
@@ -186,7 +185,7 @@ def reduce(img, sigma, F_size):
 
 
 def expand(img):
-    expanded_img = np.zeros((2*img.shape[0],2*img.shape[1], 3)).astype(np.uint8)
+    expanded_img = np.zeros((2*img.shape[0],2*img.shape[1], 3))
     expanded_img[::2, ::2] = img
 
     channels = []
@@ -204,10 +203,10 @@ def expand(img):
 
     return_array = np.stack(channels, axis = 2)
     
-    return 4*convolve(return_array, gaussian(1, 5))
+    return convolve(return_array, gaussian(4, 15))
 
 ##expanded_img = expand(I)
-##plt.imshow(expanded_img)
+##plt.imshow(expanded_img.astype(np.uint8))
 ##plt.show()
 
 def GaussianPyramid(I,n):
@@ -217,7 +216,7 @@ def GaussianPyramid(I,n):
 
     for i in range(1,n+1):
         print('Reducing {}'.format(i))
-        reduced_image = reduce(reduced_image, sigma = 1, F_size = 5)
+        reduced_image = reduce(reduced_image, sigma = 4, F_size = 15)
         GP.append(reduced_image)
 
     return GP
@@ -262,10 +261,10 @@ def Reconstruct(LP,n):
 ##
 ##error = np.sum(np.abs(reconstructed - I))
 
-I1 = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\apple.jpg', 1)
+I1 = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\apple.png', 1)
 I1 = cv2.cvtColor(I1, cv2.COLOR_BGR2RGB)
 
-I2 = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\orange.jpg', 1)
+I2 = cv2.imread(r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\orange.png', 1)
 I2 = cv2.cvtColor(I2, cv2.COLOR_BGR2RGB)
 
 I1 = cv2.resize(I1, (512,512))
@@ -278,8 +277,7 @@ n=2
 coords = click_function(I1.copy())
 
 binary_mask = np.zeros(I1.shape)
-binary_mask[:, :coords[0][0]] = 255
-binary_mask = binary_mask.astype(np.uint8)
+binary_mask[:, :coords[0][0]] = 1
 
 mask = binary_mask.copy()
 
@@ -298,10 +296,6 @@ L2= LaplacianPyramid(I2, n)
 
 G3 = GaussianPyramid(mask, n)
 
-for k in range(len(G3)):
-    g = G3[k].astype(float)/255
-    G3[k] = g
-
 L3 = {i : (L1[i]*G3[i] + (1 - G3[i])*L2[i]) for i in range(n+1)}
 
 
@@ -319,13 +313,46 @@ I_right = cv2.cvtColor(I_right, cv2.COLOR_BGR2RGB)
 I_left = cv2.resize(I_left, (512,512))
 I_right = cv2.resize(I_right, (512,512))
 
-cut_location = 200
+cut_location = 150
 
 mosaic = np.zeros((I_left.shape[0], 2 * I_left.shape[1] - cut_location, 3)).astype(np.uint8)
 mosaic_left = mosaic.copy()
 mosaic_left[:I_left.shape[0], :I_left.shape[1]] = I_left
 mosaic_right = mosaic.copy()
 mosaic_right[-I_right.shape[0]:, -I_right.shape[1]:] = I_right
+
+L_left = Laplacian(I_left, n)
+L_right = Laplacian(I_right, n)
+
+def blend_laplacians(L1, L2):
+    L3 = {}
+    for key in L1.keys():
+        blend_line = int(L1[key].shape[1] // 2)
+        L3[key] = np.zeros(L1[key].shape)
+        L3[key][:, :blend_line] = L1[key][:, :blend_line]
+        L3[key][:, blend_line+1:] = L2[key][:, blend_line+1:]
+        L3[key][:, blend_line] = (L1[key][:, blend_line] + L2[key][:,blend_line])/2
+
+    return_array  = {key:(L3[key]).astype(np.uint8) for key in L3.keys()}
+    return return_array
+
+blended = blend_laplacians(L1, L2)
+
+mask_left = np.zeros(I_left.shape)
+mask_left[:, :I_left.shape[1] - cut_location] = 255
+mask_left = mask_left.astype(np.uint8)
+
+mask_right = np.zeros(I_right.shape)
+mask_right[:, cut_location:] = 255
+mask_right = mask_right.astype(np.uint8)
+
+mask_left = cv2.blur(mask_left, (51,51))
+
+plt.imshow(mask_left)
+plt.show()
+
+
+
 
 
 
