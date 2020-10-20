@@ -191,7 +191,6 @@ def expand(img):
     return 4 * convolve(expanded_img, gaussian(1,5))
 
 
-
 def GaussianPyramid(I,n):
 
     reduced_image = I.copy()
