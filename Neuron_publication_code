@@ -2997,6 +2997,258 @@ def get_best_distribution(data):
 ##    ax[i].legend()
 ##plt.show()
 
+
+###############################################################################
+############################## START
+##
+##def get_all_fb_data(fb_val):
+##
+##
+##    def comparison_function_2(model_type ,p_name, value, n_seconds, fb_val):
+##        parameter_args = ['name', 'n_type', 'M', 'E', 'k',
+##                          'pr', 'f', 'v0', 'vth', 'tv', 'kv', 'AP_per_second',
+##                          'AP_length','refractory_period', 'A','tau','AP_prob_function',
+##                          'other']
+##
+##        template_args = make_template(parameter_args)
+##        
+##
+##    ################  - TEST 2-4: START
+##
+##        #Ex + FEEDBACK
+##
+##        AP_per_second = 100
+##        kv_ex = 0.02
+##        kv_fb = fb_val
+##
+##        pr_ex = 0.3
+##        
+##        v_thresh = 0.2
+##        tau = 20e-3
+##
+##        if p_name == 'v_thresh':
+##            v_thresh = value
+##        if p_name == 'firing_ex':
+##            firing_ex = value
+##        if p_name == 'firing_inh':
+##            firing_inh = value
+##        if p_name == 'kv_ex':
+##            kv_ex = value
+##        if p_name == 'kv_inh':
+##            kv_inh = value
+##        if p_name == 'kv_fb':
+##            kv_fb = value
+##        if p_name == 'pr_ex':
+##            pr_ex = value
+##        if p_name == 'pr_inh':
+##            pr_inh = value
+##        if p_name == 'tau':
+##            tau = value
+##        if p_name == 'refractory_period':
+##            refractory_period = value
+##        if p_name == 'AP_per_second':
+##            AP_per_second = value
+##
+##        
+##        N_ex_2_dict = neuron_dict(name = 'N_ex_2',n_type='ex',M = 10, E = 5,
+##                                    pr = pr_ex, AP_prob_function = sigmoid,
+##                                    refractory_period = 0.003, kv = kv_ex,
+##                                    AP_per_second = AP_per_second)
+##        N_post_2_dict = neuron_dict(name = 'N_post_2',n_type='ex',M = 10, E = 5,
+##                                    pr = 0.3, AP_prob_function = partial(sigmoid,
+##                                    vth = v_thresh), refractory_period = 0.003,
+##                                    kv = kv_fb, vth = v_thresh, tau = tau)
+##
+##        #E, no feedback
+##        AP_per_second = 100
+##        kv_ex = 0.02
+##        kv_fb = -0.02
+##
+##        pr_ex = 0.3
+##        pr_fb = 0.1
+##        
+##        v_thresh = 0.2
+##        tau = 20e-3
+##
+##        if p_name == 'v_thresh':
+##            v_thresh = value
+##        if p_name == 'firing_ex':
+##            firing_ex = value
+##        if p_name == 'firing_inh':
+##            firing_inh = value
+##        if p_name == 'kv_ex':
+##            kv_ex = value
+##        if p_name == 'kv_inh':
+##            kv_inh = value
+##        if p_name == 'pr_ex':
+##            pr_ex = value
+##        if p_name == 'pr_inh':
+##            pr_inh = value
+##        if p_name == 'tau':
+##            tau = value
+##        if p_name == 'refractory_period':
+##            refractory_period = value
+##        if p_name == 'AP_per_second':
+##            AP_per_second = value
+##        
+##        
+##        N_ex_4_dict = neuron_dict(name = 'N_ex_4',n_type='ex',M = 10, E = 5,
+##                                    pr = pr_ex, AP_prob_function = sigmoid,
+##                                    refractory_period = 0.003,
+##                                    AP_per_second = AP_per_second, kv = kv_ex)
+##        N_post_4_dict = neuron_dict(name = 'N_post_4',n_type='ex',M = 10, E = 5,
+##                                    pr = pr_fb, AP_prob_function =
+##                                    partial(sigmoid, vth = v_thresh), tau = tau,
+##                                    refractory_period = 0.003, vth = v_thresh)
+##    ################### - TEST 2-4 END
+##
+##
+##
+##        ##MUST ATTACH A NEURON TO THE END OF ANY NEURON YOU WANT TO MEASURE VESICLES OF.
+##        ##3 is connected after 2 so you can measure 2.  It's a measuring neuron
+##        #Second network: E + F
+##        N_ex_2 = Neuron(N_ex_2_dict)
+##        N_ex_2.firing_neuron = True
+##        N_post_2 = Neuron(N_post_2_dict)
+##
+##        #Fourth network: E, no F
+##        N_ex_4 = Neuron(N_ex_4_dict)
+##        N_ex_4.firing_neuron = True
+##        N_post_4 = Neuron(N_post_4_dict)
+##        
+##        #Make connections
+##        c21 = [N_ex_2, N_post_2]
+##        c22 = [N_post_2, N_post_2]
+##
+##        c41 = [N_ex_4, N_post_4]
+##
+##        connections_2 = [c21, c22]
+##        connections_4 = [c41]    
+##
+##        make_pre_post_connections(connections_2)
+##        make_pre_post_connections(connections_4)
+##
+##        #Test duration
+##        n_seconds = n_seconds#60 seconds times 1 min/s
+##
+##        full_neuron_list_2 = [N_ex_2, N_post_2]
+##        full_neuron_list_4 = [N_ex_4, N_post_4]
+##        
+##        #MAIN TEST
+##            
+##        if model_type == 'E':
+##            print('First test')
+##            run_main_test(full_neuron_list_2, n_seconds)
+##            print('Second test')
+##            run_main_test(full_neuron_list_4, n_seconds)
+##        
+##        ##Plotting Results
+##
+##        ##plot_firing_times(firing_neurons_list, firing_times_dict)
+##
+##        if model_type == 'E':
+##            N_post_2.get_T_star(plotting = False)
+##            N_post_4.get_T_star(plotting = False)
+##
+##        if model_type == 'E':
+##            return N_post_2, N_post_4, (N_post_2.mean, N_post_2.CV, N_post_2.fano, N_post_2.autocorr), \
+##                    (N_post_4.mean, N_post_4.CV, N_post_4.fano, N_post_4.autocorr)
+##
+##
+##    #--------------------------- Run the main test ----------------------------
+##
+##    mean_x = []
+##    cv_x = []
+##    fano_x = []
+##    autocorr_x = []
+##
+##    mean_y = []
+##    cv_y = []
+##    fano_y = []
+##    autocorr_y = []
+##
+##
+##
+##    ##firing_ex_fb = 100
+##    ##firing_inh_fb = 100
+##    ##v_thresh_fb = 0.2
+##    ##kv_ex_fb = 0.01
+##    ##kv_inh_fb = -0.01
+##    ##kv_fb = -0.02
+##    ##
+##    ##firing_ex = 100
+##    ##firing_inh = 100
+##    ##v_thresh = 0.4
+##    ##kv_ex = 0.01
+##    ##kv_inh = -0.01
+##
+##
+##
+##    model_type = 'E'
+##    p_name = 'kv_ex'
+##    values = np.linspace(0.1, 0.3, 20)
+##    n_seconds = 60*2
+##
+##    for i in range(len(values)):
+##        print('\nTest #',i+1, ' of ', len(values))
+##        if model_type == 'E':
+##            N_post_2, N_post_4, x,y = comparison_function(model_type = model_type,
+##                                                          p_name = p_name,
+##                                                          value = values[i],
+##                                                          n_seconds = n_seconds)
+##
+##        mean_x.append(x[0])
+##        cv_x.append(x[1])
+##        fano_x.append(x[2])
+##        autocorr_x.append(x[3])
+##
+##        mean_y.append(y[0])
+##        cv_y.append(y[1])
+##        fano_y.append(y[2])
+##        autocorr_y.append(y[3])
+##
+##    variables_fb = [mean_x, cv_x, fano_x, autocorr_x]
+##    variables_nfb = [mean_y, cv_y, fano_y, autocorr_y]
+##
+##    names_fb = ['mean_fb', 'cv_fb', 'fano_fb', 'autocorr_fb']
+##    names_nfb = ['mean', 'cv', 'fano', 'autocorr']
+##    return variables_fb[0], variables_fb[1], variables_nfb[0], variables_nfb[1]
+##
+##
+##def plot_mean_and_cv(data_mean_list, data_cv_list, mean_nfb, cv_nfb, fb):
+##    for i in range(len(data_mean_list)):
+##        plt.plot(data_mean_list[i], label = 'Feedback = {}'.format(fb[i]))
+##    plt.plot(mean_nfb, label = 'Non-feedback')
+##    plt.title('Feedback plots: Mean')
+##    plt.legend()
+##    plt.show()
+##
+##    for i in range(len(data_cv_list)):
+##        plt.plot(data_cv_list[i], label = 'Feedback = {}'.format(fb[i]))
+##    plt.plot(cv_nfb, label = 'Non-feedback')
+##    plt.title('Feedback plots: CV')
+##    plt.legend()
+##    plt.show()
+##
+##    
+##
+##        
+##data_mean_list = []
+##data_cv_list = []
+##n_tests_fb = 5
+##fb = np.linspace(-3, -0.02, n_tests_fb)
+##for i in range(n_tests_fb):
+##
+##    print(i+1, 'of', n_tests_fb )
+##    data_mean, data_cv, mean_fnb, cv_nfb = get_all_fb_data(fb[i])
+##    data_mean_list.append(data_mean)
+##    data_cv_list.append(data_cv)
+##
+##plot_mean_and_cv(data_mean_list, data_cv_list, mean_fnb, cv_nfb, fb)
+##
+############################## END
+
+
 ###############################################################################
 ###############################################################################                
 ###############################################################################
@@ -3022,7 +3274,7 @@ def comparison_function(model_type ,p_name, value, n_seconds):
 
     AP_per_second = 100
     kv_ex = 0.02
-    kv_fb = -0.05
+    kv_fb = -2
 
     pr_ex = 0.3
     
@@ -3188,8 +3440,8 @@ autocorr_y = []
 
 
 model_type = 'E'
-p_name = 'pr_ex'
-values = np.linspace(0.3, 1.0, 20)
+p_name = 'kv_ex'
+values = np.linspace(0.1, 0.3, 20)
 n_seconds = 60*2
 
 for i in range(len(values)):
@@ -3215,6 +3467,8 @@ variables_nfb = [mean_y, cv_y, fano_y, autocorr_y]
 
 names_fb = ['mean_fb', 'cv_fb', 'fano_fb', 'autocorr_fb']
 names_nfb = ['mean', 'cv', 'fano', 'autocorr']
+
+
 
 
 #
@@ -3259,6 +3513,8 @@ plt.legend()
 
 #SHOW ALL THE PLOTS
 plt.show()
+
+
 #
 
 ##fig, ax = plt.subplots(1,4)
