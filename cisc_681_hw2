@@ -5,8 +5,6 @@ def main():
     output_string = alpha_beta_prune(input_list)
     print_output(input_string, output_string)    
 
-
-
 def print_output(input_string, output_string):
     print('Input:\n{}\nOutput:\n{}'.format(input_string,output_string))
 
@@ -15,8 +13,67 @@ def alpha_beta_prune(input_list):
     game_tree = set_up_tree(input_list)
 
 def set_up_tree(input_list):
+
+    root = Node('root')
+    nodes_1 = [Node('1_{}'.format(i)) for i in range(3)]
+    nodes_2 = [Node('2_{}'.format(i)) for i in range(6)]
+    nodes_3 = [Node('3_{}'.format(i)) for i in range(12)]
+
+    root.children = nodes_1
     
-    return game_tree
+    for node in nodes_1:
+        node.parent = root
+
+
+    nodes_1[0].children = nodes_3[:2]
+    nodes_1[1].children = nodes_3[2:4]
+    nodes_1[2].children = nodes_3[4:]
+
+    nodes_2[0].parent = nodes_1[0]
+    nodes_2[1].parent = nodes_1[0] 
+    nodes_2[2].parent = nodes_1[1]
+    nodes_2[3].parent = nodes_1[1]    
+    nodes_2[4].parent = nodes_1[2]
+    nodes_2[5].parent = nodes_1[2]
+
+    for i in range(6):
+        nodes_2[i].children = nodes_3[2*i:2*i + 2]
+
+    nodes_3[0].parent = nodes_2[0]
+    nodes_3[1].parent = nodes_2[0]
+    nodes_3[2].parent = nodes_2[1]
+    nodes_3[3].parent = nodes_2[1]
+    nodes_3[4].parent = nodes_2[2]
+    nodes_3[5].parent = nodes_2[2]
+    nodes_3[6].parent = nodes_2[3]
+    nodes_3[7].parent = nodes_2[3]
+    nodes_3[8].parent = nodes_2[4]
+    nodes_3[9].parent = nodes_2[4]
+    nodes_3[10].parent = nodes_2[5]
+    nodes_3[11].parent = nodes_2[5]
+
+    for i in range(len(input_list)):
+        nodes_3[i].value = input_list[i]
+    
+    T = Tree(root, nodes_1, nodes_2, nodes_3)
+    
+    return T
+
+class Node:
+    def __init__(self, name):
+        self.name = name
+        self.value = None
+        self.parent = None
+        self.children = None
+
+class Tree:
+    def __init__(self, root, l1, l2, l3):
+        self.root = root
+        self.l1 = l1
+        self.l2 = l2
+        self.l3 = l3
+        
+        
     
 main()
 
