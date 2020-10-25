@@ -21,15 +21,31 @@ def alpha_beta_prune(game_tree):
     m, pruned_list = alpha_beta_search(G, game_tree.root)
 
 
+
+
+#
     prunes = []
     for node in pruned_list:
-        prunes.append(get_leaves(node))
+        for leaf in get_leaves(node):
+            prunes.append(leaf)
+
+
+    prunes = [x[-1] for x in prunes]
+    prunes.sort()
+    prunes = ' '.join([x[-1] for x in prunes])
+#
+
+
+    prunes = []
+    for node in pruned_list:
+        for leaf in get_leaves(node):
+            prunes.append(leaf)
+        
 
     prunes = [x for x in prunes if x is not None]
     prunes = ' '.join([str(elem) for elem in prunes])
-    output_string = prunes
 
-    
+    output_string = prunes
 
     return output_string
 
@@ -172,10 +188,14 @@ def min_value(game, state, alpha, beta, player, pruned_list):
     return v,move
 
 def get_leaves(node):
-    if node.children == None:
-        return node.value
-    for child in node.children:
-        prunes.append(get_pruned(child))
+    prunes = []
+    def get_leaves_2(node):
+        if node.children == None:
+            return node.name
+        for child in node.children:
+            prunes.append(get_leaves_2(child))
+    get_leaves_2(node)
+    return prunes
 
 input_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ,12]
 
@@ -189,11 +209,19 @@ m, pruned_list = alpha_beta_search(G, game_tree.root)
 
 prunes = []
 for node in pruned_list:
-    prunes.append(get_leaves(node))
+    for leaf in get_leaves(node):
+        prunes.append(leaf)
+
+
+prunes = [x[-1] for x in prunes]
+prunes.sort()
+prunes = ' '.join([x[-1] for x in prunes])
+        
 
 prunes = [x for x in prunes if x is not None]
 prunes = ' '.join([str(elem) for elem in prunes])
 prunes
 
-
 main()
+
+
