@@ -2,50 +2,30 @@ import numpy as np
 def main():
     
     input_string = input()
-    
     input_list = [int(x) for x in input_string.split(' ')]
     
     game_tree = set_up_tree(input_list)
     
     output_string = alpha_beta_prune(game_tree)
-    
+    #output_string = ABP(input_list, 0)
     print_output(input_string, output_string)    
 
 def print_output(input_string, output_string):
-    print('Input:\n{}\nOutput:\n{}'.format(input_string,output_string))
+    print('{}'.format(output_string))
 
 def alpha_beta_prune(game_tree):
 
     G = game()
 
-    m, pruned_list = alpha_beta_search(G, game_tree.root)
+    m, visited_nodes = alpha_beta_search(G, game_tree.root)
+    all_nodes = set(node.name for node in game_tree.l3)
+    
+    unvisited_nodes = list(all_nodes - visited_nodes)
+    unvisited_nodes = [int(x[2:]) for x in unvisited_nodes]
+    unvisited_nodes.sort()
+    unvisited_nodes = ' '.join((str(x) for x in unvisited_nodes))
 
-
-
-
-#
-    prunes = []
-    for node in pruned_list:
-        for leaf in get_leaves(node):
-            prunes.append(leaf)
-
-
-    prunes = [x[-1] for x in prunes]
-    prunes.sort()
-    prunes = ' '.join([x[-1] for x in prunes])
-#
-
-
-    prunes = []
-    for node in pruned_list:
-        for leaf in get_leaves(node):
-            prunes.append(leaf)
-        
-
-    prunes = [x for x in prunes if x is not None]
-    prunes = ' '.join([str(elem) for elem in prunes])
-
-    output_string = prunes
+    output_string = unvisited_nodes
 
     return output_string
 
@@ -68,7 +48,6 @@ def set_up_tree(input_list):
     
     for node in nodes_1:
         node.parent = root
-
 
     nodes_1[0].children = nodes_2[:2]
     nodes_1[1].children = nodes_2[2:4]
@@ -109,8 +88,6 @@ class Node:
     def __init__(self, name):
         self.name = name
         self.value = None
-        self.alpha = None
-        self.beta = None
         self.parent = None
         self.children = None
         self.level = None
@@ -121,7 +98,6 @@ class Tree:
         self.l1 = l1
         self.l2 = l2
         self.l3 = l3
-        
         
 class game:
     
@@ -149,79 +125,125 @@ class game:
             return "Max"
         else:
             return 'Min'
-    
-
 
 def alpha_beta_search(game, state):
     player = game.to_move(state)
-    pruned_list = []
-    value, move = max_value(game, state, -np.inf, np.inf, player, pruned_list)
+    visited_nodes = set()
+    value, move = max_value(game, state, -np.inf, np.inf, player, visited_nodes)
     
-    return move, pruned_list
+    return move, visited_nodes
 
-def max_value(game, state, alpha, beta, player, pruned_list):
+def max_value(game, state, alpha, beta, player, visited_nodes):
     if game.is_terminal(state):
+        visited_nodes.add(state.name)
         return game.utility(state,player), None
     v = -np.inf
     for a in game.actions(state):
-        v2, a2 = min_value(game, game.result(state, a), alpha, beta, player, pruned_list)
+        v2, a2 = min_value(game, game.result(state, a), alpha, beta, player, visited_nodes)
         if v2 > v:
             v, move = v2, a
             alpha = max(alpha, v)
         if v >= beta:
-            pruned_list.append(state)
             return v, move
     return v, move
 
-def min_value(game, state, alpha, beta, player, pruned_list):
+def min_value(game, state, alpha, beta, player, visited_nodes):
     if game.is_terminal(state):
+        visited_nodes.add(state.name)
         return game.utility(state, player), None
     v = np.inf
     for a in game.actions(state):
-        v2, a2 = max_value(game, game.result(state,a), alpha, beta, player, pruned_list)
+        v2, a2 = max_value(game, game.result(state,a), alpha, beta, player, visited_nodes)
         if v2 < v:
             v, move = v2, a
             beta = min(beta, v)
         if v <= alpha:
-            pruned_list.append(state)
             return v, move
     return v,move
 
-def get_leaves(node):
-    prunes = []
-    def get_leaves_2(node):
-        if node.children == None:
-            return node.name
-        for child in node.children:
-            prunes.append(get_leaves_2(child))
-    get_leaves_2(node)
-    return prunes
+####def get_leaves(node):
+####    prunes = []
+####    def get_leaves_2(node):
+####        if node.children == None:
+####            return node.name
+####        for child in node.children:
+####            prunes.append(get_leaves_2(child))
+####    get_leaves_2(node)
+####    return prunes
 
-input_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ,12]
+##input_list = [1,4,12,16,1,7,3,1,2,8,10,2]
+##
+##game_tree = set_up_tree(input_list)
+##
+##G = game()
+##
+####m, pruned_list = alpha_beta_search(G, game_tree.root)
+##m, visited_nodes = alpha_beta_search(G, game_tree.root)
+##
+##all_nodes = set(node.name for node in game_tree.l3)
+##unvisited_nodes = list(all_nodes - visited_nodes)
+##unvisited_nodes = [x[-1] for x in unvisited_nodes]
+##unvisited_nodes.sort()
+##unvisited_nodes = ' '.join((str(x) for x in unvisited_nodes))
+##unvisited_nodes
 
-game_tree = set_up_tree(input_list)
-
-G = game()
-
-m, pruned_list = alpha_beta_search(G, game_tree.root)
 
 
+##Simpler method from the slides that I decided against for generalization
 
-prunes = []
-for node in pruned_list:
-    for leaf in get_leaves(node):
-        prunes.append(leaf)
-
-
-prunes = [x[-1] for x in prunes]
-prunes.sort()
-prunes = ' '.join([x[-1] for x in prunes])
-        
-
-prunes = [x for x in prunes if x is not None]
-prunes = ' '.join([str(elem) for elem in prunes])
-prunes
+##def value(successor, alpha, beta, visited, node_list):
+##
+##    if successor.level == 1:
+##        return min_value(successor, alpha, beta, visited, node_list)
+##    if (successor.level == 2) or (successor.level == 0):
+##        return max_value(successor, alpha, beta, visited, node_list)
+##    if successor.level == 3:
+##        visited.add(successor.name)
+##        return successor.value
+##
+##def max_value(state, alpha, beta, visited, node_list):
+##    v = - np.inf
+##    for successor in state.children:
+##        v = max(v, value(successor, alpha, beta, visited, node_list))
+##        if v >= beta:
+##            node_list.append(successor.children)
+##            return v
+##        alpha = max(alpha,v)
+##    return v
+##
+##def min_value(state, alpha, beta, visited, node_list):
+##    v = np.inf
+##    for successor in state.children:
+##        v = min(v, value(successor, alpha, beta, visited, node_list))
+##        if v <= alpha:
+##            node_list.append(successor.children)
+##            return v
+##        beta = min(beta, v)
+##    return v
+##
+####input_list = [1,4,12,16,1,7,3,1,2,8,10,2]
+##
+##
+##def ABP(input_list, t):
+##    visited = set()
+##    node_list = []
+##    game_tree = set_up_tree(input_list)
+##    value(game_tree.root, -np.inf, np.inf, visited, node_list)
+##
+##    if t == 0:
+##        all_nodes = set(node.name for node in game_tree.l3)
+##            
+##        unvisited_nodes = list(all_nodes - visited)
+##        print(unvisited_nodes)
+##        unvisited_nodes = [int(x[2:]) for x in unvisited_nodes]
+##        unvisited_nodes.sort()
+##        unvisited_nodes = ' '.join((str(x) for x in unvisited_nodes))
+##        return unvisited_nodes
+##
+##    if t == 1:
+##        node_list = np.ravel([node for node in node_list if node is not None])
+##        node_list = [x.name[2:] for x in node_list]
+##        node_list.sort()
+##        node_list = ' '.join((str(x) for x in node_list))
 
 main()
-
-
