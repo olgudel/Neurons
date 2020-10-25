@@ -1,20 +1,33 @@
 import numpy as np
-
 def main():
+    
     input_string = input()
+    
     input_list = [int(x) for x in input_string.split(' ')]
-
+    
     game_tree = set_up_tree(input_list)
-
-    alpha_beta_prune(game_tree)
-
-    output_string = alpha_beta_prune(input_list)
+    
+    output_string = alpha_beta_prune(game_tree)
+    
     print_output(input_string, output_string)    
 
 def print_output(input_string, output_string):
     print('Input:\n{}\nOutput:\n{}'.format(input_string,output_string))
 
 def alpha_beta_prune(game_tree):
+
+    G = game()
+
+    m, pruned_list = alpha_beta_search(G, game_tree.root)
+
+
+    prunes = []
+    for node in pruned_list:
+        prunes.append(get_leaves(node))
+
+    prunes = [x for x in prunes if x is not None]
+    prunes = ' '.join([str(elem) for elem in prunes])
+    output_string = prunes
 
     
 
@@ -94,10 +107,6 @@ class Tree:
         self.l3 = l3
         
         
-    
-main()
-
-
 class game:
     
     def __init__(self):
@@ -162,6 +171,12 @@ def min_value(game, state, alpha, beta, player, pruned_list):
             return v, move
     return v,move
 
+def get_leaves(node):
+    if node.children == None:
+        return node.value
+    for child in node.children:
+        prunes.append(get_pruned(child))
+
 input_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ,12]
 
 game_tree = set_up_tree(input_list)
@@ -170,17 +185,15 @@ G = game()
 
 m, pruned_list = alpha_beta_search(G, game_tree.root)
 
-def get_leaves(node):
-    if node.children == None:
-        print('Value', node.value)
-        return node.value
-    for child in node.children:
-        prunes.append(get_pruned(child))
+
 
 prunes = []
 for node in pruned_list:
     prunes.append(get_leaves(node))
 
 prunes = [x for x in prunes if x is not None]
+prunes = ' '.join([str(elem) for elem in prunes])
 prunes
 
+
+main()
