@@ -1,0 +1,38 @@
+import numpy as np
+import cv2
+from matplotlib import pyplot as plt
+
+left_address = r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\PR2\left_2.jpg'
+right_address = r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\PR2\right_2.jpg'
+
+
+
+img_L = cv2.imread(left_address,1)
+img_R = cv2.imread(right_address,1)
+
+def get_corners(img):
+
+    img_L = img.copy()
+
+    gray = cv2.cvtColor(img_L,cv2.COLOR_BGR2GRAY)
+    gray = np.float32(gray)
+    dst = cv2.cornerHarris(gray,4,5,0.04)
+
+    # Threshold for an optimal value, it may vary depending on the image.
+    corner_mask = dst>0.01*dst.max()
+    img_L[corner_mask]=[0,0,255]
+    return img_L, corner_mask
+
+result, corners_mask = get_corners(img_R)
+plt.imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
+plt.show()
+
+plt.imshow(corners_mask)
+plt.show()
+
+
+##stereo = cv2.StereoBM_create(16, 15)
+##disparity = stereo.compute(img_L, img_R)
+##
+##plt.imshow(disparity,'gray')
+##plt.show()
