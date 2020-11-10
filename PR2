@@ -2,13 +2,22 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 
-left_address = r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\PR2\left_2.jpg'
-right_address = r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\PR2\right_2.jpg'
+left_address = r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\PR2\left.png'
+right_address = r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\PR2\right.png'
 
 
 
 img_L = cv2.imread(left_address,1)
 img_R = cv2.imread(right_address,1)
+
+img_L = cv2.resize(img_L, (512,512))
+img_R = cv2.resize(img_R, (512,512))
+
+plt.imshow(img_L)
+plt.show()
+plt.imshow(img_R)
+plt.show()
+
 
 def get_corners(img):
 
@@ -23,7 +32,7 @@ def get_corners(img):
     img_L[corner_mask]=[0,0,255]
     return img_L, corner_mask
 
-result, corners_mask = get_corners(img_R)
+result, corners_mask = get_corners(img_L)
 plt.imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
 plt.show()
 
@@ -31,8 +40,46 @@ plt.imshow(corners_mask)
 plt.show()
 
 
-##stereo = cv2.StereoBM_create(16, 15)
-##disparity = stereo.compute(img_L, img_R)
-##
-##plt.imshow(disparity,'gray')
-##plt.show()
+
+gray_L = cv2.cvtColor(img_L,cv2.COLOR_BGR2GRAY)
+gray_R = cv2.cvtColor(img_R,cv2.COLOR_BGR2GRAY)
+
+stereo = cv2.StereoBM_create(16, 15)
+disparity = stereo.compute(gray_L, gray_R)
+plt.imshow(disparity,'gray')
+plt.show()
+
+def compare_matrices(M1, M2):
+    return np.sqrt(np.trace(np.matmul(a,b.T)))
+
+def get_disparity(img2, i,j,pixels, w_size):
+    
+    disparity_list = []
+    for k in range(w_size, j):
+        img_2_pixels = img2[i+w_size:i+2*w_size, k+w_size: k+2*w_size]
+        disparity_list.append(compare_matrices(pixels, img_2_pixels))
+    if len(disparity_list) == 0:
+        return 0
+    return j - np.argmax(disparity_list)
+        
+
+def get_region_disparity(image_1, image_2, window_size):
+
+    image_1 = cv2.cvtColor(image_1, cv2.COLOR_BGR2GRAY)
+    image_2 = cv2.cvtColor(image_2, cv2.COLOR_BGR2GRAY)
+
+    w_size = (window_size - 1) // 2
+    img = cv2.copyMakeBorder(image_1, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
+    img2 = cv2.copyMakeBorder(image_2, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
+    
+    disparity_array = np.zeros(img.shape)
+
+    for i in range(image_1.shape[0]):
+        for j in range(image_1.shape[1]):
+            pixels = img[i+w_size:i+2*w_size+1,j+w_size:j+2*w_size+1]
+            center = pixels[w_size, w_size]
+            disparity_array[i,j] = get_disparity(img2, i,j, pixels, w_size)
+        print(i, 'of', image_1.shape[0])
+    return disparity_array
+
+region_disparity = get_region_disparity(img_L, img_R, window_size = 5)
