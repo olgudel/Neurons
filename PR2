@@ -29,21 +29,33 @@ def compare_matrices(M1, M2, matching_score):
     if matching_score == 'NCC':
         return np.corrcoef(M1.ravel(), M2.ravel())[0,1]
 
-def get_disparity(img2, i, j, pixels, w_size, matching_score):
+def get_disparity(img2, i, j, pixels, w_size, matching_score, going):
     
     disparity_list = []
-    for k in range(w_size, j):
-        img_2_pixels = img2[i-w_size:i+w_size, k-w_size: k+w_size]
-        disparity_list.append(compare_matrices(pixels, img_2_pixels, matching_score))
-    if len(disparity_list) == 0:
-        return 0
-    return j - np.argmax(disparity_list)
+    if going == 'LR':
+        for k in range(w_size, j):
+            img_2_pixels = img2[i-w_size:i+w_size, k-w_size: k+w_size]
+            disparity_list.append(compare_matrices(pixels, img_2_pixels, matching_score))
+        if len(disparity_list) == 0:
+            return 0
+        return j - np.argmax(disparity_list)
+    if going == 'RL':
+        for k in range(j,img2.shape[1]-w_size):
+            img_2_pixels = img2[i-w_size:i+w_size, k-w_size: k+w_size]
+            disparity_list.append(compare_matrices(pixels, img_2_pixels, matching_score))
+        if len(disparity_list) == 0:
+            return 0
+        return j - np.argmax(disparity_list)
         
 
-def get_region_disparity(image_1, image_2, window_size, matching_score):
+def get_region_disparity(image_1, image_2, window_size, matching_score, going):
 
-    image_1 = cv2.cvtColor(image_1, cv2.COLOR_BGR2GRAY)
-    image_2 = cv2.cvtColor(image_2, cv2.COLOR_BGR2GRAY)
+    if going == 'LR':
+        image_1 = cv2.cvtColor(image_1, cv2.COLOR_BGR2GRAY)
+        image_2 = cv2.cvtColor(image_2, cv2.COLOR_BGR2GRAY)
+    if going == 'RL':
+        image_2 = cv2.cvtColor(image_1, cv2.COLOR_BGR2GRAY)
+        image_1 = cv2.cvtColor(image_2, cv2.COLOR_BGR2GRAY)        
 
     w_size = (window_size - 1) // 2
     img = cv2.copyMakeBorder(image_1, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
@@ -55,9 +67,78 @@ def get_region_disparity(image_1, image_2, window_size, matching_score):
         for j in range(w_size, img.shape[1] - w_size):
             pixels = img[i-w_size:i+w_size,j-w_size:j+w_size]
             center = pixels[w_size, w_size]
-            disparity_array[i,j] = get_disparity(img2, i,j, pixels, w_size, matching_score = matching_score)
+            disparity_array[i,j] = get_disparity(img2, i,j, pixels, w_size, matching_score = matching_score, going = going)
         print(i, 'of', image_1.shape[0])
     return disparity_array
+
+region_disparity_SAD = get_region_disparity(img_L, img_R, window_size = 3,
+                                            matching_score = 'SAD',
+                                            going = 'LR')
+plt.imshow(region_disparity_SAD, cmap='gray')
+plt.show()
+
+region_disparity_SSD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SSD')
+plt.imshow(region_disparity_SSD, cmap='gray')
+plt.show()
+
+region_disparity_NCC = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'NCC')
+plt.imshow(region_disparity_NCC, cmap='gray')
+plt.show()
+
+def get_feature_disparity(image_1, image_2, window_size, matching_score, going):
+
+
+     
+
+    w_size = (window_size - 1) // 2
+    img = cv2.copyMakeBorder(image_2, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
+    img2 = cv2.copyMakeBorder(image_1, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
+    
+    disparity_array = np.zeros(img.shape)
+
+    _, corners_mask_L = get_corners(img)
+
+    corners_indices = []
+    
+    for i in range(img.shape[0]):
+        for j in range(img.shape[1]):
+            if corners_mask_L[i,j] == True:
+                corners_indices.append((i,j))
+                
+    for (i,j) in corners_indices:
+        pixels = img[i-w_size:i+w_size,j-w_size:j+w_size]
+        #center = pixels[w_size, w_size]
+        disparity_array[i,j] = get_disparity(img2, i,j, pixels, w_size,
+                                             matching_score = matching_score,
+                                             going = going)
+    return disparity_array
+
+
+def get_corners(img):
+
+    img_L = img.copy()
+
+    gray = cv2.cvtColor(img_L,cv2.COLOR_BGR2GRAY)
+    gray = np.float32(gray)
+    dst = cv2.cornerHarris(gray,4,5,0.04)
+
+    # Threshold for an optimal value, it may vary depending on the image.
+    corner_mask = dst>0.01*dst.max()
+    img_L[corner_mask]=[0,0,255]
+    return img_L, corner_mask
+
+
+##result, corners_mask = get_corners(img_L)
+##plt.imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
+##plt.show()
+##
+##plt.imshow(corners_mask)
+##plt.show()
+##    
+    
+
+
+
 
 region_disparity_SAD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SAD')
 plt.imshow(region_disparity_SAD, cmap='gray')
@@ -71,35 +152,9 @@ region_disparity_NCC = get_region_disparity(img_L, img_R, window_size = 3, match
 plt.imshow(region_disparity_NCC, cmap='gray')
 plt.show()
 
-def get_feaure_disparity(image_1, image_2, window_size, matching_score):
 
-    image_1 = cv2.cvtColor(image_1, cv2.COLOR_BGR2GRAY)
-    image_2 = cv2.cvtColor(image_2, cv2.COLOR_BGR2GRAY)
-
-    w_size = (window_size - 1) // 2
-    img = cv2.copyMakeBorder(image_1, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
-    img2 = cv2.copyMakeBorder(image_2, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
-    
-    disparity_array = np.zeros(img.shape)
-
-    for i in range(w_size, img.shape[0] - w_size):
-        for j in range(w_size, img.shape[1] - w_size):
-            pixels = img[i-w_size:i+w_size,j-w_size:j+w_size]
-            center = pixels[w_size, w_size]
-            disparity_array[i,j] = get_disparity(img2, i,j, pixels, w_size, matching_score = matching_score)
-        print(i, 'of', image_1.shape[0])
-    return disparity_array
-
-region_disparity_SAD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SAD')
-plt.imshow(region_disparity_SAD, cmap='gray')
-plt.show()
-
-region_disparity_SSD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SSD')
-plt.imshow(region_disparity_SSD, cmap='gray')
-plt.show()
-
-region_disparity_NCC = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'NCC')
-plt.imshow(region_disparity_NCC, cmap='gray')
+feature_disparity = get_feature_disparity(img_L, img_R, window_size = 3, matching_score = 'SSD')
+plt.imshow(feature_disparity.astype(np.uint8))
 plt.show()
 
 #
@@ -111,8 +166,7 @@ def blurs_function(img, n, m):
             blur_list.append(cv2.GaussianBlur(blur_list[-1], (3,3), 1)[::2, ::2])
         if m == 1:
             blur_list.append(cv2.GaussianBlur(blur_list[-1], (9,9), 100))
-            
-        
+     
     return blur_list
 
 
@@ -129,43 +183,30 @@ blurs_R.reverse()
 
 #List of choices: 0 is region based, 1 is feature based
 #List of string matchings: "SAD" or "SSD" or "NCC".
+
 choices = [0,0,0]
 matchings = ['SSD', 'SSD', 'SSD']
+window_sizes = [3,3,3]
 
 disparities = []
-for i in range(len(choices) - 1):
+
+for i in range(len(choices)):
     
     choice = choices[i]
     matching_score = matchings[i]
+    window = window_sizes[i]
 
     if choice == 0:
-        region_disparity = get_region_disparity(blurs_L[i], blurs_R[i], window_size = 3, matching_score = matching)
+        region_disparity = get_region_disparity(blurs_L[i], blurs_R[i],
+                                window_size = window, matching_score = matching)
         disparities.append(region_disparity)
 
     if choice == 1:
-        feature_disparity = get_feature_disparity(blurs_L[i], blurs_R[i], window_size = 3, matching_score = matching)
+        feature_disparity = get_feature_disparity(blurs_L[i], blurs_R[i],
+                                window_size = window, matching_score = matching)
         disparities.append(region_disparity)        
 
         
-def get_corners(img):
 
-    img_L = img.copy()
 
-    gray = cv2.cvtColor(img_L,cv2.COLOR_BGR2GRAY)
-    gray = np.float32(gray)
-    dst = cv2.cornerHarris(gray,4,5,0.04)
-
-    # Threshold for an optimal value, it may vary depending on the image.
-    corner_mask = dst>0.01*dst.max()
-    img_L[corner_mask]=[0,0,255]
-    return img_L, corner_mask
-
-result, corners_mask = get_corners(img_L)
-plt.imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
-plt.show()
-
-plt.imshow(corners_mask)
-plt.show()
-    
-    
 
