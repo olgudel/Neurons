@@ -215,36 +215,36 @@ for i in range(len(choices)):
 
     _,_,_,_, result_L = transformation_pipeline(blurs_L[i], blurs_R[i], window, matching, choice)
     _,_,_,_, result_R = transformation_pipeline(blurs_R[i], blurs_L[i], window, matching, choice)
-    disparity_L
     
-##    if choice == 0:
-##        
-##        region_disparity = get_region_disparity(blurs_L[i], blurs_R[i],
-##                                window_size = window, matching_score = matching)
-##        region_disparity_2 = get_region_disparity(blurs_R[i], blurs_L[i],
-##                                window_size = window, matching_score = matching)
-##
-##        valid_disparity = validity_check(region_disparity, region_disparity_2)
-##        valid_disparity_2 = validity_check(region_disparity_2, region_disparity)
-##
-##        averaged = averaging(valid_disparity)
-##        averaged_2 = averaging(valid_disparity_2)
-##
-##        propagated = propagate_disparity(averaged)
-##        propagated_2 = propagate_disparity(averaged_2)
-##        
-##        disparities.append(valid_disparity)
-##
-##    if choice == 1:
-##
-##        feature_disparity = get_feature_disparity(blurs_L[i], blurs_R[i],
-##                                window_size = window, matching_score = matching)
-##        feature_disparity_2 = get_feature_disparity(blurs_R[i], blurs_L[i],
-##                                window_size = window, matching_score = matching)
-##        valid_disparity = validity_check(feature_disparity, feature_disparity_2)
-##        disparities.append(valid_disparity)
-##
-##
+    
+    if choice == 0:
+        
+        region_disparity = get_region_disparity(blurs_L[i], blurs_R[i],
+                                window_size = window, matching_score = matching)
+        region_disparity_2 = get_region_disparity(blurs_R[i], blurs_L[i],
+                                window_size = window, matching_score = matching)
+
+        valid_disparity = validity_check(region_disparity, region_disparity_2)
+        valid_disparity_2 = validity_check(region_disparity_2, region_disparity)
+
+        averaged = averaging(valid_disparity)
+        averaged_2 = averaging(valid_disparity_2)
+
+        propagated = propagate_disparity(averaged)
+        propagated_2 = propagate_disparity(averaged_2)
+        
+        disparities.append(valid_disparity)
+
+    if choice == 1:
+
+        feature_disparity = get_feature_disparity(blurs_L[i], blurs_R[i],
+                                window_size = window, matching_score = matching)
+        feature_disparity_2 = get_feature_disparity(blurs_R[i], blurs_L[i],
+                                window_size = window, matching_score = matching)
+        valid_disparity = validity_check(feature_disparity, feature_disparity_2)
+        disparities.append(valid_disparity)
+
+
 
 
     
