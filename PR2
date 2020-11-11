@@ -5,8 +5,6 @@ from matplotlib import pyplot as plt
 left_address = r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\PR2\left.png'
 right_address = r'C:\Users\Oliver\Desktop\Homework\2020\2 - Fall 2020\CISC 642 - Computer Vision\PR2\right.png'
 
-
-
 img_L = cv2.imread(left_address,1)
 img_R = cv2.imread(right_address,1)
 
@@ -18,8 +16,6 @@ plt.imshow(img_L)
 plt.show()
 plt.imshow(img_R)
 plt.show()
-
-
 
 def compare_matrices(M1, M2, matching_score):
     if matching_score == 'SAD':
@@ -39,7 +35,6 @@ def get_disparity(img2, i, j, pixels, w_size, matching_score):
 
     return abs(j - np.argmin(disparity_list))
         
-
 def get_region_disparity(image_1, image_2, window_size, matching_score):
 
     #Convert images to black and white
@@ -60,8 +55,8 @@ def get_region_disparity(image_1, image_2, window_size, matching_score):
         print(i, 'of', image_1.shape[0])
     return disparity_array
 
-region_disparity_SAD = get_region_disparity(img_R, img_L, window_size = 3, matching_score = 'SSD')
-plt.imshow(region_disparity_SAD.astype(np.uint8), cmap='gray')
+region_disparity_SSD = get_region_disparity(img_R, img_L, window_size = 3, matching_score = 'SSD')
+plt.imshow(region_disparity_SSD.astype(np.uint8), cmap='gray')
 plt.show()
 
 region_disparity_SSD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SAD')
@@ -92,9 +87,8 @@ def get_feature_disparity(image_1, image_2, window_size, matching_score):
     for (i,j) in corners_indices:
         pixels = img[i-w_size:i+w_size,j-w_size:j+w_size]
         #center = pixels[w_size, w_size]
-        disparity_array[i,j] = get_disparity(img2, i,j, pixels, w_size, matching_score = matching_score)
+        disparity_array[i,j] = get_disparity(img2, i,j, pixels, w_size, matching_score)
     return disparity_array
-
 
 def get_corners(img):
 
@@ -118,12 +112,12 @@ def get_corners(img):
 ##plt.show()
 ##    
     
-region_disparity_SAD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SAD')
-plt.imshow(region_disparity_SAD, cmap='gray')
-plt.show()
-
 region_disparity_SSD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SSD')
 plt.imshow(region_disparity_SSD, cmap='gray')
+plt.show()
+
+region_disparity_SAD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SAD')
+plt.imshow(region_disparity_SAD, cmap='gray')
 plt.show()
 
 region_disparity_NCC = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'NCC')
@@ -158,6 +152,47 @@ blurs_R.reverse()
 ##    plt.title('blur {}'.format(i))
 ##    plt.show()
 
+
+def validity_check(img1, img2):
+    I1 = img1.astype(np.uint8)
+    I2 = img2.astype(np.uint8)
+    new_img = np.zeros(I1.shape)
+    for i in range(I1.shape[0]):
+        for j in range(I1.shape[1]):
+            if img1[i,j] != img2[i,j]:
+                new_img[i,j] = 0
+            else:
+                new_img[i,j] = I1[i,j]
+    return new_img
+
+def propagate_disparity(disparity):
+    new_img = np.zeros((disparity.shape[0]*2,
+                        disparity.shape[1]*2))
+    new_img[0::2, 0::2] = disparity
+    new_img[1::2, 1::2] = disparity
+    new_img[0::2, 1::2] = disparity
+    new_img[1::2, 0::2] = disparity
+    return 2 * new_img
+
+def averaging(img):
+    kernel = np.ones((5, 5)) / 25
+    averaged_img = cv2.filter2D(img, -1, kernel)
+    return averaged_img
+
+def transformation_pipeline(img, img2, choice):
+    if choice == 0:
+        region_disparity = get_region_disparity(blurs_L[i], blurs_R[i],
+                            window_size = window, matching_score = matching)
+    if choice == 1:
+        region_disparity = get_feature_disparity(blurs_L[i], blurs_R[i],
+                            window_size = window, matching_score = matching)
+        
+    valid_disparity = validity_check(region_disparity, region_disparity_2)
+    averaged = averaging(valid_disparity)
+    propagated = propagate_disparity(averaged)
+    return propagated
+
+
 #List of choices: 0 is region based, 1 is feature based
 #List of string matchings: "SAD" or "SSD" or "NCC".
 
@@ -173,32 +208,38 @@ for i in range(len(choices)):
     matching_score = matchings[i]
     window = window_sizes[i]
 
-    if choice == 0:
-        region_disparity = get_region_disparity(blurs_L[i], blurs_R[i],
-                                window_size = window, matching_score = matching)
-        region_disparity_2 = get_region_disparity(blurs_R[i], blurs_L[i],
-                                window_size = window, matching_score = matching)
-        validity_check(region_disparity, region_disparity_2)
-        disparities.append(region_disparity)
+    result_L = transformation_pipeline(blurs_L[i], blurs_R[i], choice)
+    result_R = transformation_pipeline(blurs_R[i], blurs_L[i], choice)
 
-    if choice == 1:
-        feature_disparity = get_feature_disparity(blurs_L[i], blurs_R[i],
-                                window_size = window, matching_score = matching)
-        disparities.append(region_disparity)        
+##    if choice == 0:
+##        
+##        region_disparity = get_region_disparity(blurs_L[i], blurs_R[i],
+##                                window_size = window, matching_score = matching)
+##        region_disparity_2 = get_region_disparity(blurs_R[i], blurs_L[i],
+##                                window_size = window, matching_score = matching)
+##
+##        valid_disparity = validity_check(region_disparity, region_disparity_2)
+##        valid_disparity_2 = validity_check(region_disparity_2, region_disparity)
+##
+##        averaged = averaging(valid_disparity)
+##        averaged_2 = averaging(valid_disparity_2)
+##
+##        propagated = propagate_disparity(averaged)
+##        propagated_2 = propagate_disparity(averaged_2)
+##        
+##        disparities.append(valid_disparity)
+##
+##    if choice == 1:
+##
+##        feature_disparity = get_feature_disparity(blurs_L[i], blurs_R[i],
+##                                window_size = window, matching_score = matching)
+##        feature_disparity_2 = get_feature_disparity(blurs_R[i], blurs_L[i],
+##                                window_size = window, matching_score = matching)
+##        valid_disparity = validity_check(feature_disparity, feature_disparity_2)
+##        disparities.append(valid_disparity)
+##
+##
 
 
-def validity_check(img1, img2):
-    I1 = img1.astype(np.uint8)
-    I2 = img2.astype(np.uint8)
-    new_img = np.zeros(I1.shape)
-    for i in range(I1.shape[0]):
-        for j in range(I1.shape[1]):
-            if img1[i,j] != img2[i,j]:
-                new_img[i,j] = 0
-            else:
-                new_img[i,j] = I1[i,j]
-    return new_img
-            
-
-
+    
 
