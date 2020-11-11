@@ -140,7 +140,6 @@ def blurs_function(img, n, m):
             blur_list.append(cv2.GaussianBlur(blur_list[-1], (9,9), 100))
     return blur_list
 
-
 blurs_L = blurs_function(img_L, 3, m = 0)
 blurs_R = blurs_function(img_R, 3, m = 0)
 
@@ -151,7 +150,6 @@ blurs_R.reverse()
 ##    plt.imshow(blurs[i])
 ##    plt.title('blur {}'.format(i))
 ##    plt.show()
-
 
 def validity_check(img1, img2):
     I1 = img1.astype(np.uint8)
@@ -179,18 +177,23 @@ def averaging(img):
     averaged_img = cv2.filter2D(img, -1, kernel)
     return averaged_img
 
-def transformation_pipeline(img, img2, choice):
+def transformation_pipeline(img, img2, window, matching, choice):
     if choice == 0:
-        region_disparity = get_region_disparity(blurs_L[i], blurs_R[i],
+        region_disparity = get_region_disparity(img, img2,
+                            window_size = window, matching_score = matching)
+        region_disparity_2 = get_region_disparity(img2, img,
                             window_size = window, matching_score = matching)
     if choice == 1:
-        region_disparity = get_feature_disparity(blurs_L[i], blurs_R[i],
+        region_disparity = get_feature_disparity(img, img2,
+                            window_size = window, matching_score = matching)
+        region_disparity_2 = get_region_disparity(img, img2,
                             window_size = window, matching_score = matching)
         
     valid_disparity = validity_check(region_disparity, region_disparity_2)
     averaged = averaging(valid_disparity)
     propagated = propagate_disparity(averaged)
-    return propagated
+    return region_disparity, region_disparity_2, valid_disparity, \
+           averaged, propagated
 
 
 #List of choices: 0 is region based, 1 is feature based
@@ -200,17 +203,20 @@ choices = [0,0,0]
 matchings = ['SSD', 'SSD', 'SSD']
 window_sizes = [3,3,3]
 
-disparities = []
+disparity_L = []
+disparity_R = []
+
 
 for i in range(len(choices)):
     
     choice = choices[i]
-    matching_score = matchings[i]
+    matching = matchings[i]
     window = window_sizes[i]
 
-    result_L = transformation_pipeline(blurs_L[i], blurs_R[i], choice)
-    result_R = transformation_pipeline(blurs_R[i], blurs_L[i], choice)
-
+    _,_,_,_, result_L = transformation_pipeline(blurs_L[i], blurs_R[i], window, matching, choice)
+    _,_,_,_, result_R = transformation_pipeline(blurs_R[i], blurs_L[i], window, matching, choice)
+    disparity_L
+    
 ##    if choice == 0:
 ##        
 ##        region_disparity = get_region_disparity(blurs_L[i], blurs_R[i],
