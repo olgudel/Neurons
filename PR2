@@ -34,17 +34,19 @@ def get_disparity(img2, i, j, pixels, w_size, matching_score):
     disparity_list = []
     for k in range(w_size, img2.shape[1] - w_size):
         img_2_pixels = img2[i-w_size:i+w_size, k-w_size: k+w_size]
-        disparity_list.append(compare_matrices(pixels, img_2_pixels, matching_score))
-    if len(disparity_list) == 0:
-        return 0
-    return j - np.argmax(disparity_list)
+        disparity_value = compare_matrices(pixels, img_2_pixels, matching_score)
+        disparity_list.append(disparity_value)
+
+    return abs(j - np.argmin(disparity_list))
         
 
 def get_region_disparity(image_1, image_2, window_size, matching_score):
 
+    #Convert images to black and white
     image_1 = cv2.cvtColor(image_1, cv2.COLOR_BGR2GRAY)
     image_2 = cv2.cvtColor(image_2, cv2.COLOR_BGR2GRAY)
 
+    #Pad the images
     w_size = (window_size - 1) // 2
     img = cv2.copyMakeBorder(image_1, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
     img2 = cv2.copyMakeBorder(image_2, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
@@ -54,16 +56,15 @@ def get_region_disparity(image_1, image_2, window_size, matching_score):
     for i in range(w_size, img.shape[0] - w_size):
         for j in range(w_size, img.shape[1] - w_size):
             pixels = img[i-w_size:i+w_size,j-w_size:j+w_size]
-            center = pixels[w_size, w_size]
-            disparity_array[i,j] = get_disparity(img2, i,j, pixels, w_size, matching_score = matching_score)
+            disparity_array[i,j] = get_disparity(img2, i,j, pixels, w_size, matching_score)
         print(i, 'of', image_1.shape[0])
     return disparity_array
 
-region_disparity_SAD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SAD')
-plt.imshow(region_disparity_SAD, cmap='gray')
+region_disparity_SAD = get_region_disparity(img_R, img_L, window_size = 3, matching_score = 'SSD')
+plt.imshow(region_disparity_SAD.astype(np.uint8), cmap='gray')
 plt.show()
 
-region_disparity_SSD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SSD')
+region_disparity_SSD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SAD')
 plt.imshow(region_disparity_SSD, cmap='gray')
 plt.show()
 
@@ -117,10 +118,6 @@ def get_corners(img):
 ##plt.show()
 ##    
     
-
-
-
-
 region_disparity_SAD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SAD')
 plt.imshow(region_disparity_SAD, cmap='gray')
 plt.show()
@@ -147,7 +144,6 @@ def blurs_function(img, n, m):
             blur_list.append(cv2.GaussianBlur(blur_list[-1], (3,3), 1)[::2, ::2])
         if m == 1:
             blur_list.append(cv2.GaussianBlur(blur_list[-1], (9,9), 100))
-     
     return blur_list
 
 
@@ -180,6 +176,9 @@ for i in range(len(choices)):
     if choice == 0:
         region_disparity = get_region_disparity(blurs_L[i], blurs_R[i],
                                 window_size = window, matching_score = matching)
+        region_disparity_2 = get_region_disparity(blurs_R[i], blurs_L[i],
+                                window_size = window, matching_score = matching)
+        validity_check(region_disparity, region_disparity_2)
         disparities.append(region_disparity)
 
     if choice == 1:
@@ -187,7 +186,19 @@ for i in range(len(choices)):
                                 window_size = window, matching_score = matching)
         disparities.append(region_disparity)        
 
-        
+
+def validity_check(img1, img2):
+    I1 = img1.astype(np.uint8)
+    I2 = img2.astype(np.uint8)
+    new_img = np.zeros(I1.shape)
+    for i in range(I1.shape[0]):
+        for j in range(I1.shape[1]):
+            if img1[i,j] != img2[i,j]:
+                new_img[i,j] = 0
+            else:
+                new_img[i,j] = I1[i,j]
+    return new_img
+            
 
 
 
