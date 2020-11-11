@@ -179,22 +179,22 @@ def averaging(img):
     averaged_img = cv2.filter2D(img, -1, kernel)
     return averaged_img
 
-def transformation_pipeline(img, img2, window, matching, choice):
-    if choice == 0:
-        region_disparity = get_region_disparity(img, img2,
-                            window_size = window, matching_score = matching)
-        region_disparity_2 = get_region_disparity(img2, img,
-                            window_size = window, matching_score = matching)
-    if choice == 1:
-        region_disparity = get_feature_disparity(img, img2,
-                            window_size = winadow, matching_score = matching)
-        region_disparity_2 = get_region_disparity(img, img2,
-                            window_size = window, matching_score = matching)
-        
-    valid_disparity = validity_check(region_disparity, region_disparity_2)
-    averaged = averaging(valid_disparity)
-    return region_disparity, region_disparity_2, valid_disparity, \
-           averaged
+##def transformation_pipeline(img, img2, window, matching, choice):
+##    if choice == 0:
+##        region_disparity = get_region_disparity(img, img2,
+##                            window_size = window, matching_score = matching)
+##        region_disparity_2 = get_region_disparity(img2, img,
+##                            window_size = window, matching_score = matching)
+##    if choice == 1:
+##        region_disparity = get_feature_disparity(img, img2,
+##                            window_size = winadow, matching_score = matching)
+##        region_disparity_2 = get_region_disparity(img, img2,
+##                            window_size = window, matching_score = matching)
+##        
+##    valid_disparity = validity_check(region_disparity, region_disparity_2)
+##    averaged = averaging(valid_disparity)
+##    return region_disparity, region_disparity_2, valid_disparity, \
+##           averaged
 
 # ------------------------------------------------------------------------------
 
@@ -212,6 +212,9 @@ disparities_L = [get_chosen_disparity(blurs_L[i], blurs_R[i],
 disparities_R = [get_chosen_disparity(blurs_R[i], blurs_L[i],
                         window_size = window_sizes[i],
                         matching_score = matchings[i], choice = choices[i]) for i in range(len(blurs_L))]
+
+valids = [validity_check(disparities_L[i], disparities_R[i]) for i in range(len(choices))]
+averages = [averaging(valids[i]) for i in range(len(choices))]
 
 
 valid_disparity = validity_check(disparity, disparity_2)
