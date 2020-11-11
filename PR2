@@ -35,60 +35,62 @@ def get_disparity(img2, i, j, pixels, w_size, matching_score):
 
     return abs(j - np.argmin(disparity_list))
         
-def get_region_disparity(image_1, image_2, window_size, matching_score):
+def get_chosen_disparity(image_1, image_2, window_size, matching_score, choice):
 
-    #Convert images to black and white
-    image_1 = cv2.cvtColor(image_1, cv2.COLOR_BGR2GRAY)
-    image_2 = cv2.cvtColor(image_2, cv2.COLOR_BGR2GRAY)
+    if choice == 0:
+        
+        #Convert images to black and white
+        image_1 = cv2.cvtColor(image_1, cv2.COLOR_BGR2GRAY)
+        image_2 = cv2.cvtColor(image_2, cv2.COLOR_BGR2GRAY)
 
-    #Pad the images
-    w_size = (window_size - 1) // 2
-    img = cv2.copyMakeBorder(image_1, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
-    img2 = cv2.copyMakeBorder(image_2, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
+        #Pad the images
+        w_size = (window_size - 1) // 2
+        img = cv2.copyMakeBorder(image_1, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
+        img2 = cv2.copyMakeBorder(image_2, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
+        
+        disparity_array = np.zeros(img.shape)
+
+        for i in range(w_size, img.shape[0] - w_size):
+            for j in range(w_size, img.shape[1] - w_size):
+                pixels = img[i-w_size:i+w_size,j-w_size:j+w_size]
+                disparity_array[i,j] = get_disparity(img2, i,j, pixels, w_size, matching_score)
+        return disparity_array
     
-    disparity_array = np.zeros(img.shape)
+    if choice == 1:
+        
+        w_size = (window_size - 1) // 2
+        img = cv2.copyMakeBorder(image_1, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
+        img2 = cv2.copyMakeBorder(image_2, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
+        
+        disparity_array = np.zeros(img.shape)
 
-    for i in range(w_size, img.shape[0] - w_size):
-        for j in range(w_size, img.shape[1] - w_size):
+        _, corners_mask_L = get_corners(img)
+
+        corners_indices = []
+        
+        for i in range(img.shape[0]):
+            for j in range(img.shape[1]):
+                if corners_mask_L[i,j] == True:
+                    corners_indices.append((i,j))
+                    
+        for (i,j) in corners_indices:
             pixels = img[i-w_size:i+w_size,j-w_size:j+w_size]
+            #center = pixels[w_size, w_size]
             disparity_array[i,j] = get_disparity(img2, i,j, pixels, w_size, matching_score)
-        print(i, 'of', image_1.shape[0])
-    return disparity_array
+        return disparity_array
 
-region_disparity_SSD = get_region_disparity(img_R, img_L, window_size = 3, matching_score = 'SSD')
-plt.imshow(region_disparity_SSD.astype(np.uint8), cmap='gray')
-plt.show()
+##region_disparity_SSD = get_region_disparity(img_R, img_L, window_size = 3, matching_score = 'SSD')
+##plt.imshow(region_disparity_SSD.astype(np.uint8), cmap='gray')
+##plt.show()
+##
+##region_disparity_SSD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SAD')
+##plt.imshow(region_disparity_SSD, cmap='gray')
+##plt.show()
+##
+##region_disparity_NCC = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'NCC')
+##plt.imshow(region_disparity_NCC, cmap='gray')
+##plt.show()
 
-region_disparity_SSD = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'SAD')
-plt.imshow(region_disparity_SSD, cmap='gray')
-plt.show()
-
-region_disparity_NCC = get_region_disparity(img_L, img_R, window_size = 3, matching_score = 'NCC')
-plt.imshow(region_disparity_NCC, cmap='gray')
-plt.show()
-
-def get_feature_disparity(image_1, image_2, window_size, matching_score):
-
-    w_size = (window_size - 1) // 2
-    img = cv2.copyMakeBorder(image_1, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
-    img2 = cv2.copyMakeBorder(image_2, w_size, w_size, w_size, w_size,cv2.BORDER_CONSTANT,value=[0,0,0])
-    
-    disparity_array = np.zeros(img.shape)
-
-    _, corners_mask_L = get_corners(img)
-
-    corners_indices = []
-    
-    for i in range(img.shape[0]):
-        for j in range(img.shape[1]):
-            if corners_mask_L[i,j] == True:
-                corners_indices.append((i,j))
-                
-    for (i,j) in corners_indices:
-        pixels = img[i-w_size:i+w_size,j-w_size:j+w_size]
-        #center = pixels[w_size, w_size]
-        disparity_array[i,j] = get_disparity(img2, i,j, pixels, w_size, matching_score)
-    return disparity_array
 
 def get_corners(img):
 
@@ -185,55 +187,54 @@ def transformation_pipeline(img, img2, window, matching, choice):
                             window_size = window, matching_score = matching)
     if choice == 1:
         region_disparity = get_feature_disparity(img, img2,
-                            window_size = window, matching_score = matching)
+                            window_size = winadow, matching_score = matching)
         region_disparity_2 = get_region_disparity(img, img2,
                             window_size = window, matching_score = matching)
         
     valid_disparity = validity_check(region_disparity, region_disparity_2)
     averaged = averaging(valid_disparity)
-    propagated = propagate_disparity(averaged)
     return region_disparity, region_disparity_2, valid_disparity, \
-           averaged, propagated
+           averaged
 
+# ------------------------------------------------------------------------------
 
 #List of choices: 0 is region based, 1 is feature based
 #List of string matchings: "SAD" or "SSD" or "NCC".
 
-choices = [0,0,0]
-matchings = ['SSD', 'SSD', 'SSD']
-window_sizes = [3,3,3]
+choices = [0,0,0,0]
+matchings = ['SSD', 'SSD', 'SSD', 'SSD']
+window_sizes = [3,3,3, 3]
 
-disparity_L = []
-disparity_R = []
+disparities_L = [get_chosen_disparity(blurs_L[i], blurs_R[i],
+                        window_size = window_sizes[i],
+                        matching_score = matchings[i], choice = choices[i]) for i in range(len(blurs_L))]
+
+disparities_R = [get_chosen_disparity(blurs_R[i], blurs_L[i],
+                        window_size = window_sizes[i],
+                        matching_score = matchings[i], choice = choices[i]) for i in range(len(blurs_L))]
 
 
-for i in range(len(choices)):
-    
+valid_disparity = validity_check(disparity, disparity_2)
+averaged = averaging(valid_disparity)
+propagated = propagate_disparity(averaged)     
+
+for i in range(1, len(choices)):
     choice = choices[i]
     matching = matchings[i]
     window = window_sizes[i]
-
-    _,_,_,_, result_L = transformation_pipeline(blurs_L[i], blurs_R[i], window, matching, choice)
-    _,_,_,_, result_R = transformation_pipeline(blurs_R[i], blurs_L[i], window, matching, choice)
-    
     
     if choice == 0:
-        
-        region_disparity = get_region_disparity(blurs_L[i], blurs_R[i],
-                                window_size = window, matching_score = matching)
-        region_disparity_2 = get_region_disparity(blurs_R[i], blurs_L[i],
-                                window_size = window, matching_score = matching)
 
+        region_disparity = get_chosen_disparity(blurs_L[i], blurs_R[i],
+                                window_size = window, matching_score = matching,
+                                                choice = choice)
+        region_disparity_2 = get_chosen_disparity(blurs_R[i], blurs_L[i],
+                                window_size = window, matching_score = matching,
+                                                  choice = choice)
         valid_disparity = validity_check(region_disparity, region_disparity_2)
-        valid_disparity_2 = validity_check(region_disparity_2, region_disparity)
-
         averaged = averaging(valid_disparity)
-        averaged_2 = averaging(valid_disparity_2)
-
-        propagated = propagate_disparity(averaged)
-        propagated_2 = propagate_disparity(averaged_2)
-        
-        disparities.append(valid_disparity)
+        propagated += averaged
+        propagated = propagate_disparity()
 
     if choice == 1:
 
@@ -242,10 +243,6 @@ for i in range(len(choices)):
         feature_disparity_2 = get_feature_disparity(blurs_R[i], blurs_L[i],
                                 window_size = window, matching_score = matching)
         valid_disparity = validity_check(feature_disparity, feature_disparity_2)
-        disparities.append(valid_disparity)
-
-
-
-
-    
-
+        averaged = averaging(valid_disparity)
+        propagated += averaged
+        propagated = propagate_disparity()
