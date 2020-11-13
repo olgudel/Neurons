@@ -200,7 +200,8 @@ class Neuron:
                             pre_neuron.vesicle_timer_previous
         pre_neuron.refill_ratio = pre_neuron.t_diff / \
                                       pre_neuron.vesicle_refill_time
-        pre_neuron.refill_ratio = np.clip(pre_neuron.refill_ratio, 0, 1)
+        #pre_neuron.refill_ratio = np.clip(pre_neuron.refill_ratio, 0, 1)
+        pre_neuron.refill_ratio = 1 - np.exp(-pre_neuron.refill_ratio)
         pre_neuron.vesicles_refilled = np.random.binomial(pre_neuron.E,
                                                     pre_neuron.refill_ratio)
         pre_neuron.vesicle_refill_history.append(pre_neuron.vesicles_refilled)
@@ -425,12 +426,16 @@ def generate_poisson_times(AP_rate):
 def sigmoid(v, y1=-13, y2=60, v0=0, vth=0.2):
     if v >= vth:  
         return 1
-    #MODIFY SIGMOIDAL FUNCTION
-    m = (y2-y1) / (vth-v0)
-    y = m*v - y2
-    return 1/ (1 +np.exp(-y))
+##    #MODIFY SIGMOIDAL FUNCTION
+##    m = (y2-y1) / (vth-v0)
+##    y = m*v - y2
+##    return 1/ (1 +np.exp(-y))
+    if v < vth:
+        return 0
+    
+    
 
-##
+
 ##a = np.linspace(0, 0.19999, 1000)
 ##
 ##plt.title('Sigmoid Plot')
@@ -3301,7 +3306,7 @@ def get_best_distribution(data):
 
 ############################ START
 
-def get_all_fb_data(fb_val, p_name, values):
+def get_all_fb_data(fb_val, p_name, values, n_seconds):
 
 
     def comparison_function_2(model_type ,p_name, value, n_seconds, fb_val):
@@ -3487,7 +3492,7 @@ def get_all_fb_data(fb_val, p_name, values):
     model_type = 'E'
     p_name = p_name
     values = values
-    n_seconds = 60*2
+    n_seconds = n_seconds
 
     for i in range(len(values)):
         print('\nTest #',i+1, ' of ', len(values))
@@ -3539,16 +3544,17 @@ def plot_mean_and_cv(data_mean_list, data_cv_list, mean_nfb, cv_nfb, fb, p_name,
 
 # ----- Start
 p_name = 'v_thresh'
-values = np.linspace(0.02, 0.3, 20)
+values = np.linspace(0.1, 0.3, 20)
+n_seconds = 4*60
        
 data_mean_list = []
 data_cv_list = []
-n_tests_fb = 10
+n_tests_fb = 1
 fb = np.linspace(-2, -0.02, n_tests_fb)
 for i in range(n_tests_fb):
 
     print(i+1, 'of', n_tests_fb )
-    data_mean, data_cv, mean_fnb, cv_nfb, p_name, values = get_all_fb_data(fb[i], p_name, values)
+    data_mean, data_cv, mean_fnb, cv_nfb, p_name, values = get_all_fb_data(fb[i], p_name, values, n_seconds)
     data_mean_list.append(data_mean)
     data_cv_list.append(data_cv)
 
