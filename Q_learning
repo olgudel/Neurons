@@ -78,42 +78,70 @@ class Space:
         self.wall_U = wall_U
         self.wall_D = wall_D
 
-board = {i:Space(i) for i in range(1,17)}
-board[0] = Space(0)
+def make_board(user_input):
+    
+    board = {i:Space(i) for i in range(1,17)}
+    board[0] = Space(0)
 
-#Set up border
+    #Set up border
 
-board[1].left = board[1].down = board[2].down = board[3].down = board[4].down = board[4].right = \
-                board[5].left = board[8].right = board[9].left = board[12].right = board[13].left = \
-                board[13].up = board[14].up = board[15].up = board[16].up = board[16].right = None
+    board[1].left = board[1].down = board[2].down = board[3].down = board[4].down = board[4].right = \
+                    board[5].left = board[8].right = board[9].left = board[12].right = board[13].left = \
+                    board[13].up = board[14].up = board[15].up = board[16].up = board[16].right = None
 
-#Set up connections
+    #Set up connections
 
-def set_neighbors(board, state, num_list):
+    def set_neighbors(board, state, num_list):
 
-    board[state].left = board[num_list[0]]
-    board[state].up = board[num_list[1]]
-    board[state].right = board[num_list[2]]
-    board[state].down = board[num_list[3]]
+        board[state].left = board[num_list[0]]
+        board[state].up = board[num_list[1]]
+        board[state].right = board[num_list[2]]
+        board[state].down = board[num_list[3]]
 
-set_neighbors(board, 1, [0,5,2,0])
-set_neighbors(board, 2, [1,6,3,0])
-set_neighbors(board, 3, [])
-set_neighbors(board, 4, [])
-set_neighbors(board, 5, [])
-set_neighbors(board, 6,  [])
-set_neighbors(board, 7,  [])
-set_neighbors(board, 8,  [])
-set_neighbors(board, 9,  [])
-set_neighbors(board, 10,  [])
-set_neighbors(board, 11,  [])
-set_neighbors(board, 12,  [])
-set_neighbors(board, 13,  [])
-set_neighbors(board, 14,  [])
-set_neighbors(board, 15,  [])
-set_neighbors(board, 16,  [])
+    set_neighbors(board, 1, [0,5,2,0])
+    set_neighbors(board, 2, [1,6,3,0])
+    set_neighbors(board, 3, [2,7,4,0])
+    set_neighbors(board, 4, [3,8,0,0])
+    set_neighbors(board, 5, [0,9,6,1])
+    set_neighbors(board, 6,  [5,10,7,2])
+    set_neighbors(board, 7,  [6,11,8,3])
+    set_neighbors(board, 8,  [7,12,0,4])
+    set_neighbors(board, 9,  [0,13,10,5])
+    set_neighbors(board, 10,  [9,14,11,6])
+    set_neighbors(board, 11,  [10,15,12,7])
+    set_neighbors(board, 12,  [11,16,0,8])
+    set_neighbors(board, 13,  [0,0,14,9])
+    set_neighbors(board, 14,  [3,0,15,10])
+    set_neighbors(board, 15,  [14,0,16,11])
+    set_neighbors(board, 16,  [15,0,0,12])
 
 
+    board[user_input[0]].goal = True
+    board[user_input[1]].goal = True
+    board[user_input[2]].forbidden = True
+    board[user_input[3]].wall = True
+
+
+    return board
+
+
+def get_actions(board, current_state):
+
+    actions = []
+    if (board[current_state].left.name != 0) and (board[current_state].left.wall == False):
+        actions.append('left')
+    if (board[current_state].right.name != 0) and (board[current_state].right.wall == False):
+        actions.append('right')
+    if(board[current_state].up.name != 0) and (board[current_state].up.wall == False):
+        actions.append('up')
+    if (board[current_state].down.name != 0) and (board[current_state].down.wall == False):
+        actions.append('down')
+
+    return actions
+
+user_input = [10,5,3,7]
+board = make_board(user_input)
+a = get_actions(board, 1)
 
 
 def Q_learning(board, current_state, reward_signal):
@@ -139,5 +167,5 @@ def display_results():
 
 def main():
     user_input = input()
-    board = Board(user_input)
+    board = make_board(user_input)
     display_results()
