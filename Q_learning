@@ -1,2 +1,61 @@
-import numpy as np
-import 
+class Board:
+    def __init__(self, input_arg):
+
+        self.space = {i:Space() for i in range(1, 10)}
+
+        self.space[2].start = True
+        self.space[2].agent = True
+
+        self.space[input_arg[0]].goal = True
+        self.space[input_arg[1]].goal = True
+        self.space[input_arg[2]].forbidden = True
+        self.space[input_arg[3]].wall = True
+
+
+        if input_arg[4] == 'p':
+            #Optimal policy
+            pass
+        
+        if input_arg[4] == 'q':
+            #Optimal Q values
+            input_arg[5]
+        
+       if len(input_arg) == 5
+
+        
+        
+        if len(input_arg) == 6:
+
+
+    def find_agent(self):
+        for i in range(1,10):
+            if self.space[i].agent == True:
+                return i
+        
+class Space:
+    def __init__(self, start = False, goal = False, forbidden = False,
+                 wall = False, wall_L = False, wall_R = False,
+                 wall_U = False, wall_D = False):
+        self.start = start
+        self.goal = goal
+        self.forbidden = forbidden
+        self.wall = False
+        self.agent = False
+        
+        self.wall_L = wall_L
+        self.wall_R = wall_R
+        self.wall_U = wall_U
+        self.wall_D = wall_D
+
+        
+
+        
+
+board = Board('f')
+        
+
+
+def main():
+    user_input = input()
+    board = Board(user_input)
+    display_results()
