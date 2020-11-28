@@ -1,7 +1,10 @@
 class Board:
     def __init__(self, input_arg):
 
-        self.space = {i:Space() for i in range(1, 10)}
+        self.previous_state = None
+        self.previous_action = None
+
+        self.space = {i:Space(i) for i in range(1, 10)}
 
         self.space[2].start = True
         self.space[2].agent = True
@@ -11,10 +14,14 @@ class Board:
         self.space[input_arg[2]].forbidden = True
         self.space[input_arg[3]].wall = True
 
+        #Set boundaries
+
+        self.space
+
+
 
         if input_arg[4] == 'p':
-            #Optimal policy
-            pass
+            self.character_condition = 'p'
         
         if input_arg[4] == 'q':
             #Optimal Q values
@@ -31,28 +38,103 @@ class Board:
         for i in range(1,10):
             if self.space[i].agent == True:
                 return i
+
+    def get_available_actions(self, state):
+        available_actions = []
+        if state.wall_L == False and state.wall == False:
+            available_actions.append('left')
+        if state.wall_R == False:
+            available_actions.append('right')
+        if state.wall_U == False:
+            available_actions.append('up')
+        if state.wall_D == False:
+            available_actions.append('down')
+        
+
         
 class Space:
-    def __init__(self, start = False, goal = False, forbidden = False,
-                 wall = False, wall_L = False, wall_R = False,
+    def __init__(self, name, start = False, goal = False, forbidden = False,
+                 wall = False, agent = False, wall_L = False, wall_R = False,
                  wall_U = False, wall_D = False):
+        
+        self.name = name
+
+        self.left = None
+        self.right = None
+        self.up = None
+        self.down = None
+        
         self.start = start
         self.goal = goal
         self.forbidden = forbidden
-        self.wall = False
+        self.wall = wall
         self.agent = False
-        
+
+        self.Q = {'Up':None, 'Down':None, 'Left': None, 'Right':None}
+        self.N = {'Up':None, 'Down':None, 'Left': None, 'Right':None}
+
         self.wall_L = wall_L
         self.wall_R = wall_R
         self.wall_U = wall_U
         self.wall_D = wall_D
 
-        
+board = {i:Space(i) for i in range(1,17)}
+board[0] = Space(0)
+
+#Set up border
+
+board[1].left = board[1].down = board[2].down = board[3].down = board[4].down = board[4].right = \
+                board[5].left = board[8].right = board[9].left = board[12].right = board[13].left = \
+                board[13].up = board[14].up = board[15].up = board[16].up = board[16].right = None
+
+#Set up connections
+
+def set_neighbors(board, state, num_list):
+
+    board[state].left = board[num_list[0]]
+    board[state].up = board[num_list[1]]
+    board[state].right = board[num_list[2]]
+    board[state].down = board[num_list[3]]
+
+set_neighbors(board, 1, [0,5,2,0])
+set_neighbors(board, 2, [1,6,3,0])
+set_neighbors(board, 3, [])
+set_neighbors(board, 4, [])
+set_neighbors(board, 5, [])
+set_neighbors(board, 6,  [])
+set_neighbors(board, 7,  [])
+set_neighbors(board, 8,  [])
+set_neighbors(board, 9,  [])
+set_neighbors(board, 10,  [])
+set_neighbors(board, 11,  [])
+set_neighbors(board, 12,  [])
+set_neighbors(board, 13,  [])
+set_neighbors(board, 14,  [])
+set_neighbors(board, 15,  [])
+set_neighbors(board, 16,  [])
+
+
+
+
+def Q_learning(board, current_state, reward_signal):
+    if current_state is not None:
+        increment(board)
+        available_actions = get_available_actions(board, current_state)
+        board.previous_state.Q[board.previous_action] += alpha * \
+            (board.previous_state.N[board.previous_action])*\
+            (reward_signal + gamma*np.max([board.current_state.Q[available_action] - board.previous_state.Q[previous_action] for available_action in available_actions]))
+
+
+def get_available_actions(board, current_state):
+    return 
+
+def increment(board):
+    
+
 
         
-
-board = Board('f')
-        
+def display_results():
+    pass
 
 
 def main():
