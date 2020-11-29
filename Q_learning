@@ -125,19 +125,7 @@ def make_board(user_input):
     return board
 
 
-def get_actions(board, current_state):
 
-    actions = []
-    if (board[current_state].left.name != 0) and (board[current_state].left.wall == False):
-        actions.append('left')
-    if (board[current_state].right.name != 0) and (board[current_state].right.wall == False):
-        actions.append('right')
-    if(board[current_state].up.name != 0) and (board[current_state].up.wall == False):
-        actions.append('up')
-    if (board[current_state].down.name != 0) and (board[current_state].down.wall == False):
-        actions.append('down')
-
-    return actions
 
 user_input = [10,5,3,7]
 board = make_board(user_input)
@@ -208,13 +196,39 @@ def main():
 
 #################################################################################
 
-def make_Q_table():
-    Q_table = {}
-    for i in range(1,16):
-        for action in ['up','down','left','right']:
-            Q_table[i,action] = 0
+class Space:
+    def __init__(self, name, start = False, goal = False, forbidden = False,
+                 wall = False, agent = False, wall_L = False, wall_R = False,
+                 wall_U = False, wall_D = False):
+        
+        self.name = name
 
-    return Q_table
+        self.left = None
+        self.right = None
+        self.up = None
+        self.down = None
+        
+        self.start = start
+        self.goal = goal
+        self.forbidden = forbidden
+        self.wall = wall
+        self.agent = False
+
+        self.Q = {'Up':None, 'Down':None, 'Left': None, 'Right':None}
+        self.N = {'Up':None, 'Down':None, 'Left': None, 'Right':None}
+
+        self.wall_L = wall_L
+        self.wall_R = wall_R
+        self.wall_U = wall_U
+        self.wall_D = wall_D
+
+##def make_Q_table():
+##    Q_table = {}
+##    for i in range(1,16):
+##        for action in ['up','down','left','right']:
+##            Q_table[i,action] = 0
+##
+##    return Q_table
 
 def make_board(user_input):
     
@@ -263,6 +277,20 @@ def make_board(user_input):
 
     return board
 
+def get_actions(board, current_state):
+
+    actions = []
+    if (board[current_state].left.name != 0) and (board[current_state].left.wall == False):
+        actions.append('left')
+    if (board[current_state].right.name != 0) and (board[current_state].right.wall == False):
+        actions.append('right')
+    if (board[current_state].up.name != 0) and (board[current_state].up.wall == False):
+        actions.append('up')
+    if (board[current_state].down.name != 0) and (board[current_state].down.wall == False):
+        actions.append('down')
+
+    return actions
+
 def end_position_reward(end_position, user_input):
     if (end_position == user_input[0]) or (end_position == user_input[1]):
         return 100
@@ -274,23 +302,71 @@ def display_results():
 
 
 def main():
+    
     user_input = input()
-    user_input = [10,5,3,7]
+    user_input = [15, 12, 8, 6]
     board = make_board(user_input)
-    Q = make_Q_table()
+    #Q = make_Q_table()
+    Q = np.zeros((16, 4)) 
     results = run_main_program(board, Q, user_input)
     display_results(results)
 
+def move_position(board, Q, previous_position):
+    epsilon = 0.1
+    act_randomly = np.random.uniform(0,1) < epsilon
+
+    direction = None
+    
+    if act_randomly == False:
+        #0123-LURD
+        direction = number_to_direction(np.argmax(Q[previous_position]))
+    else:
+        direction = number_to_direction(np.random.randint(4))
+
+    available_actions = get_actions(board, previous_position)
+    
+    if direction in available_actions:
+        
+        if direction == 'left':
+            return board[previous_position].left.name
+        if direction == 'right':
+            return board[previous_position].right.name
+        if direction == 'up':
+            return board[previous_position].up.name
+        if direction == 'down':
+            return board[previous_position].down.name
+        
+    else:
+        return previous_position
+
+                            
+
+
+    
+def number_to_direction(n):    
+    #Convert a number to a direction
+    if n == 0:
+        return 'left'
+    if n == 1:
+        return 'up'
+    if n == 2:
+        return 'right'
+    if n == 3:
+        return 'down'
+    
+
+def update_Q(Q, reward):
+    pass
+
 def run_main_program(board, Q, user_input):
+    pass
 
 
 max_tests = 10000
 
 previous_position  = None
 end_positions = [user_input[0], user_input[1], user_input[2]]
-for i in range(max_tests):
-
-    
+for i in range(max_tests):  
     for end_position in end_positions:
         if previous_position == end_position:
             reward = end_position_reward(end_position, user_input)
