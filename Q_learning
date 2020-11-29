@@ -14,9 +14,6 @@ class Board:
         self.space[input_arg[2]].forbidden = True
         self.space[input_arg[3]].wall = True
 
-        #Set boundaries
-
-        self.space
 
 
 
@@ -85,9 +82,10 @@ def make_board(user_input):
 
     #Set up border
 
-    board[1].left = board[1].down = board[2].down = board[3].down = board[4].down = board[4].right = \
-                    board[5].left = board[8].right = board[9].left = board[12].right = board[13].left = \
-                    board[13].up = board[14].up = board[15].up = board[16].up = board[16].right = None
+    board[1].left = board[1].down = board[2].down = board[3].down = board[4].down = \
+            board[4].right = board[5].left = board[8].right = board[9].left = \
+            board[12].right = board[13].left = board[13].up = board[14].up = \
+            board[15].up = board[16].up = board[16].right = None
 
     #Set up connections
 
@@ -141,8 +139,17 @@ def get_actions(board, current_state):
 
 user_input = [10,5,3,7]
 board = make_board(user_input)
-a = get_actions(board, 1)
+current_state = 4
+a = get_actions(board, current_state)
+a
 
+##Q_table = {i:{j:None for j in ['up', 'down','left', 'right']} \
+##           for i in range(1,17)}
+
+Q_table = {}
+for i in range(1,16):
+    for action in ['up','down','left','right']:
+        Q_table[i,action] = None
 
 def Q_learning(board, current_state, reward_signal):
     if current_state is not None:
@@ -152,9 +159,6 @@ def Q_learning(board, current_state, reward_signal):
             (board.previous_state.N[board.previous_action])*\
             (reward_signal + gamma*np.max([board.current_state.Q[available_action] - board.previous_state.Q[previous_action] for available_action in available_actions]))
 
-
-def get_available_actions(board, current_state):
-    return 
 
 def increment(board):
     
