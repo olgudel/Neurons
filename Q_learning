@@ -16,9 +16,6 @@ class Board:
         self.space[input_arg[2]].forbidden = True
         self.space[input_arg[3]].wall = True
 
-
-
-
         if input_arg[4] == 'p':
             self.character_condition = 'p'
         
@@ -294,7 +291,7 @@ def get_actions(board, current_state):
 def end_position_reward(end_position, user_input):
     if (end_position == user_input[0]) or (end_position == user_input[1]):
         return 100
-    else:
+    if end_position == user_input[2]:
         return -100
 
 def display_results():
@@ -312,6 +309,7 @@ def main():
     display_results(results)
 
 def move_position(board, Q, previous_position):
+    
     epsilon = 0.1
     act_randomly = np.random.uniform(0,1) < epsilon
 
@@ -328,19 +326,27 @@ def move_position(board, Q, previous_position):
     if direction in available_actions:
         
         if direction == 'left':
-            return board[previous_position].left.name
+            return board[previous_position].left.name, 'left'
         if direction == 'right':
-            return board[previous_position].right.name
+            return board[previous_position].right.name, 'right'
         if direction == 'up':
-            return board[previous_position].up.name
+            return board[previous_position].up.name, 'up'
         if direction == 'down':
-            return board[previous_position].down.name
+            return board[previous_position].down.name, 'down'
         
     else:
-        return previous_position
+        return previous_position, direction
 
                             
-
+def direction_to_number(d):
+    if d == 'left':
+        return 0
+    if d == 'up':
+        return 1
+    if d == 'right':
+        return 2
+    if d == 'down':
+        return 3
 
     
 def number_to_direction(n):    
@@ -355,8 +361,16 @@ def number_to_direction(n):
         return 'down'
     
 
-def update_Q(Q, reward):
-    pass
+def update_Q(board, Q, R, s, a, s1):
+    #R is reward, s is previous_position,
+    #a is previous_action, s1 is next_position
+    alpha = 0.1
+    gamma = 0.2
+
+    available_actions = get_actions(board, s1)
+    available_actions = [direction_to_number(x) for x in available_actions]
+    max_action_Q = np.max([Q[s1, a1] for a1 in available_actions])
+    Q[s,a] = (1-alpha)*Q[s,a] + alpha*(R + gamma*max_action_Q)
 
 def run_main_program(board, Q, user_input):
     pass
@@ -364,15 +378,21 @@ def run_main_program(board, Q, user_input):
 
 max_tests = 10000
 
-previous_position  = None
+previous_position  = 2
+previous_action = None
+
 end_positions = [user_input[0], user_input[1], user_input[2]]
 for i in range(max_tests):  
     for end_position in end_positions:
         if previous_position == end_position:
             reward = end_position_reward(end_position, user_input)
-            update_Q(Q, reward)
+            update_Q(board, Q, reward, previous_position, previous_action, end_position)
             break
 
-    next_position = move_position(board, Q, previous_position)
+    next_position, next_action = move_position(board, Q, previous_position)
+    next_action = direction_to_number(next_action)
     reward = -0.1
-    update_Q(Q, reward)
+    update_Q(board, Q, reward, previous_position, next_action, next_position)
+
+    previous_position = next_position
+    previous_action = next_action
