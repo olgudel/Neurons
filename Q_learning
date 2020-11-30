@@ -78,7 +78,11 @@ def make_board(user_input):
 
 def get_actions(board, current_state):
 
+    if board[current_state].goal == True:
+        return 'end'
+
     actions = []
+    
     if (board[current_state].left.name != 0) and (board[current_state].left.wall == False):
         actions.append('left')
     if (board[current_state].right.name != 0) and (board[current_state].right.wall == False):
@@ -99,14 +103,23 @@ def end_position_reward(end_position, user_input):
 def display_results(user_input, Q):
     
     if user_input[4] == 'p':
-        print_optimal_policy(Q)
+        print_optimal_policy(Q, user_input)
         
     if user_input[4] == 'q':
         print_Q_values(Q, user_input[5])
 
 
-def print_optimal_policy(Q):
+def print_optimal_policy(Q, user_input):
     for i in range(1,17):
+
+        if i == user_input[0]:
+            print(i, 'goal')
+        if i == user_input[1]:
+            print(i, 'goal')
+        if i == user_input[2]:
+            print(i, 'forbidden')
+        if i == user_input[3]:
+            print(i, 'wall-square')
         print(i, number_to_direction(np.argmax(Q[i-1])))
     
 
@@ -118,13 +131,29 @@ def print_Q_values(Q, position):
     print('left', np.around(Q[position][0], 2))
     
 
+def convert_input_to_proper_form(user_input):
+    
+    u = user_input.split(' ')
+    
+    if len(u) != 6:
+        u1 = [int(x) for x in u[:4]]
+        u2 = [str(u[4])]
+        return u1 + u2
+    else:
+        u1 = [int(x) for x in u[:4]]
+        u2 = [str(u[4])]
+        u3 = [int(u[5])]
+        return u1 + u2 + u3
+        
+    
+
 
 def main():
     
     user_input = input()
-    #user_input = [15, 12, 8, 6, 'p', 1]
+    #user_input = '15 12 8 6 9 1'
+    user_input = convert_input_to_proper_form(user_input)
     board = make_board(user_input)
-    #Q = make_Q_table()
     Q = np.zeros((16, 4)) 
     run_main_program(board, Q, user_input)
     display_results(user_input, Q)
@@ -168,6 +197,8 @@ def direction_to_number(d):
         return 2
     if d == 'down':
         return 3
+    if d == 'end':
+        return 4
 
     
 def number_to_direction(n):    
@@ -180,6 +211,8 @@ def number_to_direction(n):
         return 'right'
     if n == 3:
         return 'down'
+    if n == 4:
+        return 'end'
     
 
 def update_Q(board, Q, reward, previous_position, previous_action, next_position):
@@ -198,27 +231,34 @@ def update_Q(board, Q, reward, previous_position, previous_action, next_position
 
 def run_main_program(board, Q, user_input):
 
-    for j in range(10000):
-        max_tests = 10000
+       
 
-        previous_position  = np.random.choice(list(set(np.arange(1,16)) - set([user_input[3]])))
+    for j in range(10000):
+
+
+        previous_position  = np.random.choice(list(set(np.arange(1,16)) \
+                                                   - set(user_input)))
+
         previous_action = None
-        breaker = False
 
         end_positions = [user_input[0], user_input[1], user_input[2]]
-        for i in range(max_tests):
-            if breaker == True:
-                break
+        
+        end_condition = False
+        
+        while end_condition == False:
             for end_position in end_positions:
                 if previous_position == end_position:
                     reward = end_position_reward(end_position, user_input)
-                    update_Q(board, Q, reward, previous_position, previous_action, end_position)
-                    breaker = True
+                    update_Q(board, Q, reward, previous_position,
+                             previous_action, end_position)
+                    end_condition = True
 
-            next_position, next_action = move_position(board, Q, previous_position)
+            next_position, next_action = move_position(board, Q,
+                                                       previous_position)
             next_action = direction_to_number(next_action)
             reward = -0.1
-            update_Q(board, Q, reward, previous_position, next_action, next_position)
+            update_Q(board, Q, reward, previous_position,
+                     next_action, next_position)
 
             previous_position = next_position
             previous_action = next_action
