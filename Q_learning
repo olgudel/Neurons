@@ -114,13 +114,14 @@ def print_optimal_policy(Q, user_input):
 
         if i == user_input[0]:
             print(i, 'goal')
-        if i == user_input[1]:
+        elif i == user_input[1]:
             print(i, 'goal')
-        if i == user_input[2]:
+        elif i == user_input[2]:
             print(i, 'forbidden')
-        if i == user_input[3]:
+        elif i == user_input[3]:
             print(i, 'wall-square')
-        print(i, number_to_direction(np.argmax(Q[i-1])))
+        else:
+            print(i, number_to_direction(np.argmax(Q[i-1])))
     
 
 def print_Q_values(Q, position):
@@ -144,19 +145,6 @@ def convert_input_to_proper_form(user_input):
         u2 = [str(u[4])]
         u3 = [int(u[5])]
         return u1 + u2 + u3
-        
-    
-
-
-def main():
-    
-    user_input = input()
-    #user_input = '15 12 8 6 9 1'
-    user_input = convert_input_to_proper_form(user_input)
-    board = make_board(user_input)
-    Q = np.zeros((16, 4)) 
-    run_main_program(board, Q, user_input)
-    display_results(user_input, Q)
 
 def move_position(board, Q, previous_position):
     
@@ -262,5 +250,15 @@ def run_main_program(board, Q, user_input):
 
             previous_position = next_position
             previous_action = next_action
+
+def main():
+    
+    #user_input = input()
+    user_input = '15 12 8 6 p 1'
+    user_input = convert_input_to_proper_form(user_input)
+    board = make_board(user_input)
+    Q = np.zeros((16, 4)) 
+    run_main_program(board, Q, user_input)
+    display_results(user_input, Q)
 
 main()
