@@ -1,53 +1,6 @@
+#################################################################################
 import numpy as np
 
-class Board:
-    def __init__(self, input_arg):
-
-        self.previous_state = None
-        self.previous_action = None
-
-        self.space = {i:Space(i) for i in range(1, 10)}
-
-        self.space[2].start = True
-        self.space[2].agent = True
-
-        self.space[input_arg[0]].goal = True
-        self.space[input_arg[1]].goal = True
-        self.space[input_arg[2]].forbidden = True
-        self.space[input_arg[3]].wall = True
-
-        if input_arg[4] == 'p':
-            self.character_condition = 'p'
-        
-        if input_arg[4] == 'q':
-            #Optimal Q values
-            input_arg[5]
-        
-       if len(input_arg) == 5
-
-        
-        
-        if len(input_arg) == 6:
-
-
-    def find_agent(self):
-        for i in range(1,10):
-            if self.space[i].agent == True:
-                return i
-
-    def get_available_actions(self, state):
-        available_actions = []
-        if state.wall_L == False and state.wall == False:
-            available_actions.append('left')
-        if state.wall_R == False:
-            available_actions.append('right')
-        if state.wall_U == False:
-            available_actions.append('up')
-        if state.wall_D == False:
-            available_actions.append('down')
-        
-
-        
 class Space:
     def __init__(self, name, start = False, goal = False, forbidden = False,
                  wall = False, agent = False, wall_L = False, wall_R = False,
@@ -74,158 +27,7 @@ class Space:
         self.wall_U = wall_U
         self.wall_D = wall_D
 
-def make_board(user_input):
-    
-    board = {i:Space(i) for i in range(1,17)}
-    board[0] = Space(0)
 
-    #Set up border
-
-    board[1].left = board[1].down = board[2].down = board[3].down = board[4].down = \
-            board[4].right = board[5].left = board[8].right = board[9].left = \
-            board[12].right = board[13].left = board[13].up = board[14].up = \
-            board[15].up = board[16].up = board[16].right = None
-
-    #Set up connections
-
-    def set_neighbors(board, state, num_list):
-
-        board[state].left = board[num_list[0]]
-        board[state].up = board[num_list[1]]
-        board[state].right = board[num_list[2]]
-        board[state].down = board[num_list[3]]
-
-    set_neighbors(board, 1, [0,5,2,0])
-    set_neighbors(board, 2, [1,6,3,0])
-    set_neighbors(board, 3, [2,7,4,0])
-    set_neighbors(board, 4, [3,8,0,0])
-    set_neighbors(board, 5, [0,9,6,1])
-    set_neighbors(board, 6,  [5,10,7,2])
-    set_neighbors(board, 7,  [6,11,8,3])
-    set_neighbors(board, 8,  [7,12,0,4])
-    set_neighbors(board, 9,  [0,13,10,5])
-    set_neighbors(board, 10,  [9,14,11,6])
-    set_neighbors(board, 11,  [10,15,12,7])
-    set_neighbors(board, 12,  [11,16,0,8])
-    set_neighbors(board, 13,  [0,0,14,9])
-    set_neighbors(board, 14,  [3,0,15,10])
-    set_neighbors(board, 15,  [14,0,16,11])
-    set_neighbors(board, 16,  [15,0,0,12])
-
-
-    board[user_input[0]].goal = True
-    board[user_input[1]].goal = True
-    board[user_input[2]].forbidden = True
-    board[user_input[3]].wall = True
-
-
-    return board
-
-
-
-
-user_input = [10,5,3,7]
-board = make_board(user_input)
-##current_state = 4
-##a = get_actions(board, current_state)
-
-
-##Q_table = {i:{j:None for j in ['up', 'down','left', 'right']} \
-##           for i in range(1,17)}
-
-def make_tables():
-    Q_table = {}
-    N_table = {}
-    for i in range(1,16):
-        for action in ['up','down','left','right']:
-            Q_table[i,action] = 0
-            N_table[i, action] = 0
-
-    return Q_table, N_table
-
-Q, N = make_tables()
-
-def f(q,n):
-    
-    N_e = 1 #Fixed parameter
-    R_plus = 1 #Optimistic estimate
-    
-    if n < N_e:
-        return R_plus
-    else:
-        return q
-
-def Q_learning(board, s1, r, s, a, f, Q, N):
-    
-    #s1 is current state
-    #r is reward signal
-    #s is previous state
-    #a is previous action
-    #f is exploration function
-
-    alpha = 0.1
-    gamma = 0.2
-
-    available_actions = get_actions(board, s1)
-    
-    if s is not None:
-        N[s, a] += 1
-        available_actions = get_actions(board, s1)
-        action_Q = np.max([Q[s1, a1] for a1 in available_actions])
-        Q[s, a] = Q[s,a] + alpha*(N[s,a])*(r + gamma*action_Q - Q[s,a])
-
-    s = s1
-
-    max_list = [f(Q[s1, a1], N[s1, a1]) for a1 in available_actions]
-    a = available_actions[np.argmax(max_list)]
-    return s,a
-
-Q_learning(board, 2, 1, None, None, f, Q, N)
-
-def display_results():
-    pass
-
-
-def main():
-    user_input = input()
-    board = make_board(user_input)
-    display_results()
-
-#################################################################################
-
-class Space:
-    def __init__(self, name, start = False, goal = False, forbidden = False,
-                 wall = False, agent = False, wall_L = False, wall_R = False,
-                 wall_U = False, wall_D = False):
-        
-        self.name = name
-
-        self.left = None
-        self.right = None
-        self.up = None
-        self.down = None
-        
-        self.start = start
-        self.goal = goal
-        self.forbidden = forbidden
-        self.wall = wall
-        self.agent = False
-
-        self.Q = {'Up':None, 'Down':None, 'Left': None, 'Right':None}
-        self.N = {'Up':None, 'Down':None, 'Left': None, 'Right':None}
-
-        self.wall_L = wall_L
-        self.wall_R = wall_R
-        self.wall_U = wall_U
-        self.wall_D = wall_D
-
-##def make_Q_table():
-##    Q_table = {}
-##    for i in range(1,16):
-##        for action in ['up','down','left','right']:
-##            Q_table[i,action] = 0
-##
-##    return Q_table
 
 def make_board(user_input):
     
@@ -294,19 +96,38 @@ def end_position_reward(end_position, user_input):
     if end_position == user_input[2]:
         return -100
 
-def display_results():
-    pass
+def display_results(user_input, Q):
+    
+    if user_input[4] == 'p':
+        print_optimal_policy(Q)
+        
+    if user_input[4] == 'q':
+        print_Q_values(Q, user_input[5])
+
+
+def print_optimal_policy(Q):
+    for i in range(1,17):
+        print(i, number_to_direction(np.argmax(Q[i-1])))
+    
+
+def print_Q_values(Q, position):
+     
+    print('up', np.around(Q[position][1],2))
+    print('right', np.around(Q[position][2], 2))
+    print('down', np.around(Q[position][3], 2))
+    print('left', np.around(Q[position][0], 2))
+    
 
 
 def main():
     
     user_input = input()
-    user_input = [15, 12, 8, 6]
+    #user_input = [15, 12, 8, 6, 'p', 1]
     board = make_board(user_input)
     #Q = make_Q_table()
     Q = np.zeros((16, 4)) 
-    results = run_main_program(board, Q, user_input)
-    display_results(results)
+    run_main_program(board, Q, user_input)
+    display_results(user_input, Q)
 
 def move_position(board, Q, previous_position):
     
@@ -317,7 +138,7 @@ def move_position(board, Q, previous_position):
     
     if act_randomly == False:
         #0123-LURD
-        direction = number_to_direction(np.argmax(Q[previous_position]))
+        direction = number_to_direction(np.argmax(Q[previous_position-1]))
     else:
         direction = number_to_direction(np.random.randint(4))
 
@@ -361,38 +182,45 @@ def number_to_direction(n):
         return 'down'
     
 
-def update_Q(board, Q, R, s, a, s1):
+def update_Q(board, Q, reward, previous_position, previous_action, next_position):
     #R is reward, s is previous_position,
     #a is previous_action, s1 is next_position
     alpha = 0.1
     gamma = 0.2
 
-    available_actions = get_actions(board, s1)
+    available_actions = get_actions(board, next_position)
     available_actions = [direction_to_number(x) for x in available_actions]
-    max_action_Q = np.max([Q[s1, a1] for a1 in available_actions])
-    Q[s,a] = (1-alpha)*Q[s,a] + alpha*(R + gamma*max_action_Q)
+    max_action_Q = np.max([Q[next_position-1, action] for action in available_actions])
+    
+    Q[previous_position-1, previous_action] = \
+            (1-alpha)*Q[previous_position-1,previous_action] + \
+            alpha*(reward + gamma * max_action_Q)
 
 def run_main_program(board, Q, user_input):
-    pass
 
+    for j in range(10000):
+        max_tests = 10000
 
-max_tests = 10000
+        previous_position  = np.random.choice(list(set(np.arange(1,16)) - set([user_input[3]])))
+        previous_action = None
+        breaker = False
 
-previous_position  = 2
-previous_action = None
+        end_positions = [user_input[0], user_input[1], user_input[2]]
+        for i in range(max_tests):
+            if breaker == True:
+                break
+            for end_position in end_positions:
+                if previous_position == end_position:
+                    reward = end_position_reward(end_position, user_input)
+                    update_Q(board, Q, reward, previous_position, previous_action, end_position)
+                    breaker = True
 
-end_positions = [user_input[0], user_input[1], user_input[2]]
-for i in range(max_tests):  
-    for end_position in end_positions:
-        if previous_position == end_position:
-            reward = end_position_reward(end_position, user_input)
-            update_Q(board, Q, reward, previous_position, previous_action, end_position)
-            break
+            next_position, next_action = move_position(board, Q, previous_position)
+            next_action = direction_to_number(next_action)
+            reward = -0.1
+            update_Q(board, Q, reward, previous_position, next_action, next_position)
 
-    next_position, next_action = move_position(board, Q, previous_position)
-    next_action = direction_to_number(next_action)
-    reward = -0.1
-    update_Q(board, Q, reward, previous_position, next_action, next_position)
+            previous_position = next_position
+            previous_action = next_action
 
-    previous_position = next_position
-    previous_action = next_action
+main()
